@@ -130,23 +130,17 @@ namespace TwentyThreeSeventeen::Rendering
                 genTextures_(1, &surfaceArray_);
                 bindBuffer_(GL_ARRAY_BUFFER, worldVbo_);
                 bindBuffer_(GL_ELEMENT_ARRAY_BUFFER, worldIbo_);
-                constexpr std::array<GLint, 7> widths{ 3, 3, 4, 3, 3, 4, 4 };
-                constexpr std::array offsets{ offsetof(WorldVertex, position),
-                                              offsetof(WorldVertex, normal),
-                                              offsetof(WorldVertex, tangent),
-                                              offsetof(WorldVertex, tint),
-                                              offsetof(WorldVertex, uvMaterial),
-                                              offsetof(WorldVertex, visibility),
-                                              offsetof(WorldVertex, response) };
-                for (GLuint i = 0; i < widths.size(); ++i)
+                for (GLuint i = 0; i < kWorldAttributes.size(); ++i)
                 {
                     vertexAttribPointer_(
                         i,
-                        widths[i],
+                        static_cast<GLint>(kWorldAttributes[i].components),
                         GL_FLOAT,
                         GL_FALSE,
                         sizeof(WorldVertex),
-                        reinterpret_cast<const void *>(offsets[i]));
+                        reinterpret_cast<const void *>(
+                            static_cast<std::uintptr_t>(
+                                kWorldAttributes[i].offset)));
                     enableVertexAttribArray_(i);
                 }
                 genVertexArrays_(1, &overlayArray_);
@@ -204,11 +198,7 @@ namespace TwentyThreeSeventeen::Rendering
                  const WorldFrame *world)
                 -> tl::expected<void, std::string> override
             {
-                if (world
-                    && (!world->mesh
-                        || world->indexCount > world->mesh->indices.size()
-                        || (cached_ != world->mesh
-                            && !world->mesh->ValidForUpload())))
+                if (world && !world->Valid(cached_))
                     return tl::unexpected(std::string(
                         "Invalid resident scene geometry or texture data."));
                 if (!SDL_GL_MakeCurrent(window_, context_))

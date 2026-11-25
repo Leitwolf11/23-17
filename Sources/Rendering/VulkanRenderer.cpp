@@ -135,36 +135,19 @@ namespace TwentyThreeSeventeen::Rendering
                       SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
                       offsetof(Vertex, red) }
                 };
-                constexpr SDL_GPUVertexAttribute worldAttributes[]{
-                    { 0,
-                      0,
-                      SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-                      offsetof(WorldVertex, position) },
-                    { 1,
-                      0,
-                      SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-                      offsetof(WorldVertex, normal) },
-                    { 2,
-                      0,
-                      SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4,
-                      offsetof(WorldVertex, tangent) },
-                    { 3,
-                      0,
-                      SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-                      offsetof(WorldVertex, tint) },
-                    { 4,
-                      0,
-                      SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-                      offsetof(WorldVertex, uvMaterial) },
-                    { 5,
-                      0,
-                      SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4,
-                      offsetof(WorldVertex, visibility) },
-                    { 6,
-                      0,
-                      SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4,
-                      offsetof(WorldVertex, response) }
-                };
+                std::array<SDL_GPUVertexAttribute, kWorldAttributes.size()>
+                    worldAttributes{};
+                for (Uint32 i = 0; i < worldAttributes.size(); ++i)
+                {
+                    const auto attribute = kWorldAttributes[i];
+                    worldAttributes[i]
+                        = { i,
+                            0,
+                            attribute.components == 4
+                                ? SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4
+                                : SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
+                            attribute.offset };
+                }
                 pipeline_ = Pipeline(kVertSpirv,
                                      kFragSpirv,
                                      overlayAttributes,
@@ -219,11 +202,7 @@ namespace TwentyThreeSeventeen::Rendering
                  const WorldFrame *world)
                 -> tl::expected<void, std::string> override
             {
-                if (world
-                    && (!world->mesh
-                        || world->indexCount > world->mesh->indices.size()
-                        || (cached_ != world->mesh
-                            && !world->mesh->ValidForUpload())))
+                if (world && !world->Valid(cached_))
                     return tl::unexpected(std::string(
                         "Invalid resident scene geometry or texture data."));
                 if (world && cached_ != world->mesh)
