@@ -191,7 +191,8 @@ namespace TwentyThreeSeventeen::Game
                                                       first + stride,
                                                       first + stride + 1 };
                             for (const auto index : order)
-                                surface.mesh.push_back(grid[indices[index]]);
+                                surface.faces[face].push_back(
+                                    grid[indices[index]]);
                         }
                     }
                 }
@@ -231,7 +232,8 @@ namespace TwentyThreeSeventeen::Game
                 , material{ Material::kFlat }
             {}
 
-            constexpr Paint(Position tint, Material basis = Material::kFlat)
+            explicit constexpr Paint(Position tint,
+                                     Material basis = Material::kFlat)
                 : color{ tint }
                 , material{ basis }
             {}
@@ -348,9 +350,13 @@ namespace TwentyThreeSeventeen::Game
                     = bay == -1  ? Position{ 0.54f, 0.39f, 0.23f }
                       : bay == 1 ? Position{ 0.29f, 0.32f, 0.29f }
                                  : voidColor;
-                add({ x, 3.30f, 16.78f }, { 0.49f, 0.55f, 0.026f }, glass);
+                add({ x, 3.30f, 16.78f },
+                    { 0.49f, 0.55f, 0.026f },
+                    Paint{ glass });
                 add({ x, 3.30f, 16.74f }, { 0.025f, 0.55f, 0.024f }, trim, 1);
-                add({ x, 0.91f, 16.84f }, { 0.73f, 1.02f, 0.07f }, voidColor);
+                add({ x, 0.91f, 16.84f },
+                    { 0.73f, 1.02f, 0.07f },
+                    Paint{ voidColor });
                 add({ x + 0.78f, 1.44f, 16.81f },
                     { 0.055f, 1.46f, 0.07f },
                     trim,
@@ -360,8 +366,12 @@ namespace TwentyThreeSeventeen::Game
             }
 
             const Position pole{ 0.052f, 0.059f, 0.062f };
-            add({ -1.38f, 1.89f, 14.55f }, { 0.041f, 1.91f, 0.043f }, pole);
-            add({ -1.38f, 3.76f, 14.35f }, { 0.04f, 0.042f, 0.22f }, pole);
+            add({ -1.38f, 1.89f, 14.55f },
+                { 0.041f, 1.91f, 0.043f },
+                Paint{ pole });
+            add({ -1.38f, 3.76f, 14.35f },
+                { 0.04f, 0.042f, 0.22f },
+                Paint{ pole });
             add({ -1.38f, 3.71f, 14.12f },
                 { 0.18f, 0.041f, 0.15f },
                 { 0.87f, 0.61f, 0.33f });
@@ -396,7 +406,9 @@ namespace TwentyThreeSeventeen::Game
             // Rain-darkened service alley, visible from the mid-stair window.
             add({ -5.9f, -0.19f, -2.5f }, { 3.9f, 0.12f, 7.3f }, asphalt);
             add({ -9.3f, 2.42f, -2.5f }, { 0.22f, 2.55f, 7.3f }, brick);
-            add({ -9.09f, 1.1f, -3.24f }, { 0.055f, 1.15f, 0.76f }, voidColor);
+            add({ -9.09f, 1.1f, -3.24f },
+                { 0.055f, 1.15f, 0.76f },
+                Paint{ voidColor });
             add({ -9.07f, 2.52f, -3.24f },
                 { 0.05f, 0.095f, 0.29f },
                 { 0.31f, 0.39f, 0.43f });
@@ -404,7 +416,9 @@ namespace TwentyThreeSeventeen::Game
             {
                 const auto z = 1.9f - static_cast<float>(index) * 1.8f;
                 add({ -9.06f, 3.60f, z }, { 0.12f, 0.48f, 0.53f }, trim);
-                add({ -8.94f, 3.61f, z }, { 0.018f, 0.36f, 0.42f }, voidColor);
+                add({ -8.94f, 3.61f, z },
+                    { 0.018f, 0.36f, 0.42f },
+                    Paint{ voidColor });
             }
         }
 
@@ -791,39 +805,54 @@ namespace TwentyThreeSeventeen::Game
             const auto material = quality.details > 0
                                       ? static_cast<float>(surface.material)
                                       : 0.0f;
-            for (const auto &point : surface.mesh)
+            const Position relative{ eye.x - surface.center.x,
+                                     eye.y - surface.center.y,
+                                     eye.z - surface.center.z };
+            const bool inside = std::abs(relative.x) <= surface.halfSize.x
+                                && std::abs(relative.y) <= surface.halfSize.y
+                                && std::abs(relative.z) <= surface.halfSize.z;
+            for (std::size_t face = 0; face < kNormals.size(); ++face)
             {
-                Position light;
-                if (surface.exterior || surface.stairLamp
-                    || quality.lighting == 0)
+                const auto normal = kNormals[face];
+                if (!inside
+                    && Dot(relative, normal)
+                           <= std::abs(Dot(surface.halfSize, normal)))
+                    continue;
+                for (const auto &point : surface.faces[face])
                 {
-                    const auto level
-                        = point.ambient
-                          * (surface.stairLamp ? stairPower : ambientPower);
-                    light = { level, level, level };
-                }
-                else
-                {
-                    const auto level = point.ambient * 0.58f * ambientPower;
-                    light = { level * 0.83f, level * 0.91f, level };
-                    for (int index = 0; index < quality.lighting; ++index)
+                    Position light;
+                    if (surface.exterior || surface.stairLamp
+                        || quality.lighting == 0)
                     {
-                        const auto lamp = static_cast<std::size_t>(index);
-                        const auto amount = point.direct[lamp]
-                                            * (lamp == 1 ? stairPower : 1.0f);
-                        light.x += amount * tints[lamp].x;
-                        light.y += amount * tints[lamp].y;
-                        light.z += amount * tints[lamp].z;
+                        const auto level
+                            = point.ambient
+                              * (surface.stairLamp ? stairPower : ambientPower);
+                        light = { level, level, level };
                     }
+                    else
+                    {
+                        const auto level = point.ambient * 0.58f * ambientPower;
+                        light = { level * 0.83f, level * 0.91f, level };
+                        for (int index = 0; index < quality.lighting; ++index)
+                        {
+                            const auto lamp = static_cast<std::size_t>(index);
+                            const auto amount
+                                = point.direct[lamp]
+                                  * (lamp == 1 ? stairPower : 1.0f);
+                            light.x += amount * tints[lamp].x;
+                            light.y += amount * tints[lamp].y;
+                            light.z += amount * tints[lamp].z;
+                        }
+                    }
+                    auto vertex = project(point.position);
+                    vertex.red = std::min(1.0f, surface.color.x * light.x);
+                    vertex.green = std::min(1.0f, surface.color.y * light.y);
+                    vertex.blue = std::min(1.0f, surface.color.z * light.z);
+                    vertex.textureU = point.textureU;
+                    vertex.textureV = point.textureV;
+                    vertex.material = material;
+                    vertices.push_back(vertex);
                 }
-                auto vertex = project(point.position);
-                vertex.red = std::min(1.0f, surface.color.x * light.x);
-                vertex.green = std::min(1.0f, surface.color.y * light.y);
-                vertex.blue = std::min(1.0f, surface.color.z * light.z);
-                vertex.textureU = point.textureU;
-                vertex.textureV = point.textureV;
-                vertex.material = material;
-                vertices.push_back(vertex);
             }
         }
 

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include <SDL3/SDL.h>
+#include <algorithm>
 #include <cstddef>
-#include <cstring>
 
 #include "Rendering/Renderer.hpp"
 
@@ -201,8 +201,10 @@ namespace TwentyThreeSeventeen::Rendering
                 auto *mapped = SDL_MapGPUTransferBuffer(device_, upload_, true);
                 if (mapped == nullptr)
                     return tl::unexpected(std::string(SDL_GetError()));
-                if (!frame.empty())
-                    std::memcpy(mapped, frame.data(), frame.size_bytes());
+                const auto mappedBytes
+                    = std::span(static_cast<std::byte *>(mapped),
+                                static_cast<std::size_t>(kVertexBufferSize));
+                std::ranges::copy(std::as_bytes(frame), mappedBytes.begin());
                 SDL_UnmapGPUTransferBuffer(device_, upload_);
 
                 auto *commands = SDL_AcquireGPUCommandBuffer(device_);

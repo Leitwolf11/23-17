@@ -11,7 +11,6 @@ namespace TwentyThreeSeventeen::Game
         struct Text
         {
             const char *paused;
-            const char *begin;
             const char *resume;
             const char *quit;
             const char *settings;
@@ -42,7 +41,6 @@ namespace TwentyThreeSeventeen::Game
 
         constexpr std::array<Text, 3> kText{ {
             { "Paused",
-              "Begin investigation",
               "Resume investigation",
               "Quit to desktop",
               "Settings",
@@ -70,7 +68,6 @@ namespace TwentyThreeSeventeen::Game
               "Settings could not be applied",
               "WASD  Move     E  Inspect     J  Journal     R  Report" },
             { "Pause",
-              "Ermittlung beginnen",
               "Ermittlung fortsetzen",
               "Spiel beenden",
               "Einstellungen",
@@ -98,7 +95,6 @@ namespace TwentyThreeSeventeen::Game
               "Einstellungen konnten nicht angewendet werden",
               "WASD  Gehen     E  Untersuchen     J  Akte     R  Bericht" },
             { "Pause",
-              "Commencer l’enquête",
               "Reprendre l’enquête",
               "Quitter le jeu",
               "Paramètres",

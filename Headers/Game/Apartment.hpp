@@ -39,7 +39,7 @@ namespace TwentyThreeSeventeen::Game
         bool exterior{};
         Material material{ Material::kFlat };
         bool stairLamp{};
-        std::vector<SurfaceVertex> mesh{};
+        std::array<std::vector<SurfaceVertex>, 6> faces{};
     };
 
     struct ActorPoint
