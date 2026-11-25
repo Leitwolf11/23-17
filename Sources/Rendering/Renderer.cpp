@@ -7,17 +7,17 @@ namespace TwentyThreeSeventeen::Rendering
     OpenGl(WindowSize size, bool sync)
         -> tl::expected<std::unique_ptr<Renderer>, std::string>;
     auto
-    Vulkan(WindowSize size, bool sync)
+    Vulkan(WindowSize size, bool sync, bool requireHardware)
         -> tl::expected<std::unique_ptr<Renderer>, std::string>;
 
     auto
-    Open(Backend backend, WindowSize size, bool sync)
+    Open(Backend backend, WindowSize size, bool sync, bool requireHardware)
         -> tl::expected<std::unique_ptr<Renderer>, std::string>
     {
         switch (backend)
         {
             case Backend::kVulkan:
-                return Vulkan(size, sync);
+                return Vulkan(size, sync, requireHardware);
             case Backend::kOpenGl:
                 return OpenGl(size, sync);
             case Backend::kAuto:

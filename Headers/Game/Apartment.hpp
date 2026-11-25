@@ -21,15 +21,6 @@ namespace TwentyThreeSeventeen::Game
         kMetal
     };
 
-    struct SurfaceVertex
-    {
-        Physics::Position position;
-        float textureU;
-        float textureV;
-        float ambient;
-        std::array<float, 4> direct;
-    };
-
     struct Surface
     {
         Physics::Position center;
@@ -39,7 +30,6 @@ namespace TwentyThreeSeventeen::Game
         bool exterior{};
         Material material{ Material::kFlat };
         bool stairLamp{};
-        std::array<std::vector<SurfaceVertex>, 6> faces{};
     };
 
     struct ActorPoint
@@ -80,6 +70,17 @@ namespace TwentyThreeSeventeen::Game
     [[nodiscard]] auto
     CreateScene(Investigation::CaseId id) -> Apartment;
     [[nodiscard]] auto
+    BuildWorld(const Apartment &scene, Rendering::MaterialAtlas materials)
+        -> std::shared_ptr<Rendering::WorldMesh>;
+    [[nodiscard]] auto
+    FrameView(const Apartment &scene,
+              Physics::Position eye,
+              const Camera &camera,
+              float aspect,
+              SceneQuality quality,
+              float stairPower) -> Rendering::WorldView;
+
+    [[nodiscard]] auto
     View(float yaw, float pitch) -> Camera;
 
     auto
@@ -91,6 +92,5 @@ namespace TwentyThreeSeventeen::Game
                SceneQuality quality,
                std::vector<Rendering::Vertex> &vertices,
                float weatherSeconds = 0.0f,
-               float stairPower = 1.0f,
                float projection = 0.0f) -> void;
 } // namespace TwentyThreeSeventeen::Game

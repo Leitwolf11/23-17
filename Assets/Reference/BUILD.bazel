@@ -1,0 +1,5 @@
+filegroup(
+    name = "reference_assets",
+    srcs = ["brass_vase_01.glb", "marble_bust_01.glb", "surfaces.png"],
+    visibility = ["//Sources/Rendering:__pkg__"],
+)

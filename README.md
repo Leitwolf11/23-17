@@ -8,6 +8,18 @@ The native build opens three playable investigations. **The Apartment** follows 
 
 The C++20 engine targets Windows and Linux desktop. It ships US English, German and French in the native menus and case files. The [Godot Legacy Demo](LegacyDemo/README.md) is the earlier version of the Apartment investigation.
 
+## Graphics engine reference
+
+Launch the material study independently of the game. Drag with the left mouse button to orbit the scans, use the wheel to move closer and press Esc to exit.
+
+```sh
+bazelisk run //Sources/Rendering:reference -- --fullscreen
+```
+
+The desktop renderer uploads indexed meshes once per scene. OpenGL 4.2 Core and Vulkan use the same GLSL sources for normal-mapped metallic/roughness shading, local reflections, depth-dependent haze, filmic tone mapping and a contrast-adaptive edge filter. Static triangle geometry supplies area-light visibility and hemispherical contact occlusion. Interior and street probes capture the scene at load time. Light intensity and camera-dependent highlights update every frame. The street's rain film lowers asphalt roughness.
+
+The reference scene includes a vaulted alcove, turned plinths, a marble bust and a brass vase. The production executable and material study share the rendering library. Jolt handles player movement and collision in the game. Asset provenance is recorded with the [materials](Assets/Materials/README.md) and [reference models](Assets/Reference/README.md).
+
 ## Run the native build
 
 Use Bazelisk and Clang from the repository root. GCC and clang-cl are compatibility configurations.

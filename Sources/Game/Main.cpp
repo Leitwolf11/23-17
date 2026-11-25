@@ -763,6 +763,15 @@ namespace TwentyThreeSeventeen::Game
         {
             auto apartment = CreateScene(id);
             AddCaseProps(apartment, id, executable);
+            auto materials = Rendering::LoadMaterials(executable);
+            if (!materials)
+            {
+                SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                             "%s",
+                             materials.error().c_str());
+                return EXIT_FAILURE;
+            }
+            const auto world = BuildWorld(apartment, std::move(*materials));
             const auto casePath = CaseFile(path, id);
             auto investigation = LoadCase(casePath, id);
             std::error_code existenceError;
@@ -1013,7 +1022,6 @@ namespace TwentyThreeSeventeen::Game
                     vertices,
                     static_cast<float>(
                         std::chrono::duration<double>(now - started).count()),
-                    1.0f - 0.78f * dim,
                     apartment.cinema ? projected : 0.0f);
                 const auto caption = horror.Caption(settings.language);
                 if (settings.captions && !caption.empty())
@@ -1034,8 +1042,22 @@ namespace TwentyThreeSeventeen::Game
                         viewport.size.width,
                         viewport.size.height,
                         vertices);
-                if (auto rendered
-                    = graphics.renderer->Draw(vertices, renderSize);
+                const auto quality = Quality(settings);
+                Rendering::WorldFrame worldFrame{
+                    world,
+                    FrameView(apartment,
+                              eye,
+                              camera,
+                              static_cast<float>(renderSize.width)
+                                  / static_cast<float>(renderSize.height),
+                              quality,
+                              1.0f - 0.78f * dim),
+                    world->detailEnds[static_cast<std::size_t>(quality.details)]
+                };
+                worldFrame.view.probeCenter[3] = seconds;
+                if (auto rendered = graphics.renderer->Draw(vertices,
+                                                            renderSize,
+                                                            &worldFrame);
                     !rendered)
                 {
                     if (graphics.renderer->ActiveBackend() != Backend::kVulkan)

@@ -9,6 +9,7 @@
 #include <tl/expected.hpp>
 
 #include "Rendering/Backend.hpp"
+#include "Rendering/World.hpp"
 
 struct SDL_Window;
 
@@ -18,7 +19,6 @@ namespace TwentyThreeSeventeen::Rendering
     {
         float x, y, z, w;
         float red, green, blue;
-        float textureU{}, textureV{}, material{};
     };
 
     struct WindowSize
@@ -74,11 +74,16 @@ namespace TwentyThreeSeventeen::Rendering
         [[nodiscard]] virtual auto
         ActiveBackend() const noexcept -> Backend = 0;
         [[nodiscard]] virtual auto
-        Draw(std::span<const Vertex> vertices, WindowSize renderSize = {})
+        Draw(std::span<const Vertex> vertices,
+             WindowSize renderSize = {},
+             const WorldFrame *world = nullptr)
             -> tl::expected<void, std::string> = 0;
     };
 
     [[nodiscard]] auto
-    Open(Backend backend, WindowSize size, bool sync)
+    Open(Backend backend,
+         WindowSize size,
+         bool sync,
+         bool requireHardware = true)
         -> tl::expected<std::unique_ptr<Renderer>, std::string>;
 } // namespace TwentyThreeSeventeen::Rendering

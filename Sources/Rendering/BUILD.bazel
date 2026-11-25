@@ -1,11 +1,59 @@
-load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 load("//Build:Cpp.bzl", "COPTS", "DESKTOP")
 
 cc_library(
     name = "rendering",
-    srcs = ["OpenGlRenderer.cpp", "Renderer.cpp", "SceneOpenGl.inc", "SceneSpirv.inc", "VulkanRenderer.cpp"],
+    srcs = [
+        "OpenGlRenderer.cpp",
+        "Renderer.cpp",
+        "ScannedMesh.cpp",
+        "SceneOpenGl.inc",
+        "SceneSpirv.inc",
+        "VulkanRenderer.cpp",
+        "World.cpp",
+    ],
     copts = COPTS,
     target_compatible_with = DESKTOP,
+    visibility = ["//Sources/Game:__pkg__", "//Tests/Rendering:__pkg__"],
+    deps = [
+        ":gltf",
+        ":lighting",
+        "//Headers/Rendering:rendering",
+        "@rules_cc//cc/runfiles",
+        "@sdl3//:sdl3",
+    ],
+)
+
+cc_library(
+    name = "gltf",
+    srcs = ["GltfImplementation.c"],
     visibility = ["//Sources/Game:__pkg__"],
-    deps = ["//Headers/Rendering:rendering", "@sdl3//:sdl3"],
+    deps = ["@cgltf"],
+)
+
+cc_library(
+    name = "lighting",
+    srcs = ["Lighting.cpp"],
+    hdrs = ["Vector.hpp"],
+    copts = COPTS,
+    target_compatible_with = DESKTOP,
+    visibility = ["//Tests/Rendering:__pkg__"],
+    deps = ["//Headers/Rendering:rendering"],
+)
+
+cc_binary(
+    name = "reference",
+    srcs = ["Reference.cpp"],
+    data = [
+        "//Assets/Materials:surfaces.png",
+        "//Assets/Reference:reference_assets",
+    ],
+    copts = COPTS,
+    target_compatible_with = DESKTOP,
+    deps = [
+        ":rendering",
+        "//Headers/Rendering:rendering",
+        "@rules_cc//cc/runfiles",
+        "@sdl3//:sdl3",
+    ],
 )

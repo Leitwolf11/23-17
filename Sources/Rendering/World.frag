@@ -1,0 +1,97 @@
+// SPDX-License-Identifier: MIT
+#version 420 core
+layout(location=0) in vec2 uv;
+layout(location=1) flat in int layer;
+layout(location=2) in vec3 surfaceTint;
+layout(location=3) in vec4 lightVisibility;
+layout(location=4) in vec3 worldPosition;
+layout(location=5) in vec3 worldNormal;
+layout(location=6) in vec4 worldTangent;
+layout(location=7) in vec2 ambientEmission;
+layout(location=8) in float fogAmount;
+#ifdef OPENGL_SCENE
+layout(std140,binding=0)
+#else
+layout(std140,set=3,binding=0)
+#endif
+uniform Camera {
+    vec4 eye, right, up, forward;
+    vec4 lamps[4], spectra[4];
+    vec4 probeCenter, probeHalfSize;
+    vec4 streetCenter, streetHalfSize, streetLamp;
+};
+#ifdef OPENGL_SCENE
+layout(binding=0)
+#else
+layout(set=2,binding=0)
+#endif
+uniform sampler2DArray surfaces;
+layout(location=0) out vec4 outputColor;
+
+void main()
+{
+    vec3 albedo = surfaceTint * surfaceTint;
+    vec3 n = vec3(0,0,1);
+    float rough = 0.72, metal = 0.0, ao = 1.0;
+    if (layer >= 0)
+    {
+        vec4 base = texture(surfaces, vec3(uv, layer));
+        vec4 packedMap = texture(surfaces, vec3(uv, layer + (textureSize(surfaces,0).z-int(probeHalfSize.w))/2));
+        // The tint is the art-directed palette; scans retain their local color and contrast.
+        albedo = clamp(albedo * (base.rgb * base.rgb * 3.4), 0.0, 1.0);
+        vec2 xy = packedMap.xy * 2.0 - 1.0;
+        n = normalize(vec3(xy, sqrt(max(0.001, 1.0-dot(xy,xy)))));
+        rough = clamp(packedMap.z, 0.16, 1.0);
+        metal = packedMap.w;
+        ao = base.a;
+        if (layer == 3) rough = max(0.13,rough*0.42); // Rain film on asphalt
+    }
+    vec3 geometric=normalize(worldNormal);
+    vec3 tangent=normalize(worldTangent.xyz-geometric*dot(geometric,worldTangent.xyz));
+    n=normalize(mat3(tangent,cross(geometric,tangent)*worldTangent.w,geometric)*n);
+    vec3 v=normalize(eye.xyz-worldPosition);
+    float nv=max(dot(n,v),0.001);
+    vec3 f0=mix(vec3(0.04),albedo,metal);
+    float a=rough*rough,a2=a*a,k=(rough+1.0)*(rough+1.0)*0.125;
+    vec3 direct=vec3(0.0);
+    bool outside=probeHalfSize.w>1.5 && any(greaterThan(abs(worldPosition-probeCenter.xyz),probeHalfSize.xyz+vec3(0.12)));
+    for (int i=0;i<4;++i)
+    {
+        vec4 lamp=outside && i==0 ? streetLamp : lamps[i];
+        float power=lamp.w*lightVisibility[i];
+        if(power<0.001) continue;
+        vec3 delta=lamp.xyz-worldPosition;
+        float d2=max(dot(delta,delta),0.001);
+        vec3 l=delta*inversesqrt(d2);
+        float nl=max(dot(n,l),0.0);
+        vec3 h=normalize(v+l);
+        float nh=max(dot(n,h),0.0),vh=max(dot(v,h),0.0);
+        float d=nh*nh*(a2-1.0)+1.0;
+        float distribution=a2/max(3.14159*d*d,0.00001);
+        float geom=0.25/((nv*(1.0-k)+k)*(nl*(1.0-k)+k));
+        vec3 fresnel=f0+(1.0-f0)*pow(1.0-vh,5.0);
+        vec3 diffuse=albedo*(1.0-metal)*(1.0-fresnel);
+        direct+=(diffuse+fresnel*distribution*geom)*spectra[i].rgb*(nl*power/(1.0+d2));
+    }
+    vec3 linearColor=albedo*ambientEmission.x*ao*vec3(0.77,0.86,1.0)+direct+albedo*ambientEmission.y;
+    if (layer >= 0)
+    {
+        vec3 probeOffset=worldPosition-probeCenter.xyz,probeExtent=probeHalfSize.xyz;
+        if(outside){probeOffset=worldPosition-streetCenter.xyz;probeExtent=streetHalfSize.xyz;}
+        vec3 ray=reflect(-v,n);
+        vec3 signedRay=mix(vec3(-1.0),vec3(1.0),greaterThanEqual(ray,vec3(0)));
+        vec3 dist=(signedRay*probeExtent-probeOffset)/(signedRay*max(abs(ray),vec3(0.0001)));
+        float travel=min(min(dist.x,dist.y),dist.z);
+        if (all(lessThan(abs(probeOffset),probeExtent+vec3(0.02))))
+            ray=normalize(probeOffset+ray*max(0.0,travel));
+        vec2 coord=vec2(atan(ray.z,ray.x)*0.15915494+0.5, asin(clamp(ray.y,-1.0,1.0))*0.31830989+0.5);
+        vec3 radiance=textureLod(surfaces,vec3(coord,textureSize(surfaces,0).z-int(probeHalfSize.w)+(outside?1:0)),rough*rough*8.0).rgb;
+        vec3 envFresnel=f0+(max(vec3(1.0-rough),f0)-f0)*pow(1.0-nv,5.0);
+        linearColor+=4.0*radiance*radiance*envFresnel*mix(ao,1.0,0.25);
+    }
+    linearColor=mix(linearColor,vec3(0.022,0.033,0.046),fogAmount);
+    // Fitted filmic shoulder and toe followed by the SDR display transfer.
+    vec3 mapped=clamp((linearColor*(2.51*linearColor+0.03))/(linearColor*(2.43*linearColor+0.59)+0.14),0.0,1.0);
+    outputColor=vec4(mix(12.92*mapped,1.055*pow(mapped,vec3(1.0/2.4))-0.055,
+                         greaterThan(mapped,vec3(0.0031308))),1);
+}

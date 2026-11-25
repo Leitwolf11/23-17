@@ -98,41 +98,59 @@ namespace TwentyThreeSeventeen::Rendering
                 GAME_GL_LOAD(framebufferRenderbuffer_,
                              "glFramebufferRenderbuffer");
                 GAME_GL_LOAD(framebufferStatus_, "glCheckFramebufferStatus");
-                GAME_GL_LOAD(blitFramebuffer_, "glBlitFramebuffer");
+                GAME_GL_LOAD(drawElements_, "glDrawElements");
+                GAME_GL_LOAD(texImage2D_, "glTexImage2D");
+                GAME_GL_LOAD(texImage3D_, "glTexImage3D");
+                GAME_GL_LOAD(genTextures_, "glGenTextures");
+                GAME_GL_LOAD(bindTexture_, "glBindTexture");
+                GAME_GL_LOAD(texParameteri_, "glTexParameteri");
+                GAME_GL_LOAD(generateMipmap_, "glGenerateMipmap");
+                GAME_GL_LOAD(bindBufferBase_, "glBindBufferBase");
+                GAME_GL_LOAD(framebufferTexture2D_, "glFramebufferTexture2D");
+                GAME_GL_LOAD(getError_, "glGetError");
+                GAME_GL_LOAD(disable_, "glDisable");
 #undef GAME_GL_LOAD
 
-                const auto vertex = Compile(GL_VERTEX_SHADER, kVertSource);
-                if (!vertex)
-                    return tl::unexpected(vertex.error());
-                const auto fragment = Compile(GL_FRAGMENT_SHADER, kFragSource);
-                if (!fragment)
+                const auto overlay = Link(kVertSource, kFragSource);
+                const auto world = Link(kWorldVertSource, kWorldFragSource);
+                const auto present
+                    = Link(kPresentVertSource, kPresentFragSource);
+                if (!overlay || !world || !present)
+                    return tl::unexpected(
+                        !overlay ? overlay.error()
+                                 : (!world ? world.error() : present.error()));
+                program_ = *overlay;
+                worldProgram_ = *world;
+                presentProgram_ = *present;
+                genVertexArrays_(1, &worldArray_);
+                bindVertexArray_(worldArray_);
+                genBuffers_(1, &worldVbo_);
+                genBuffers_(1, &worldIbo_);
+                genBuffers_(1, &viewUbo_);
+                genTextures_(1, &surfaceArray_);
+                bindBuffer_(GL_ARRAY_BUFFER, worldVbo_);
+                bindBuffer_(GL_ELEMENT_ARRAY_BUFFER, worldIbo_);
+                constexpr std::array<GLint, 7> widths{ 3, 3, 4, 3, 3, 4, 4 };
+                constexpr std::array offsets{ offsetof(WorldVertex, position),
+                                              offsetof(WorldVertex, normal),
+                                              offsetof(WorldVertex, tangent),
+                                              offsetof(WorldVertex, tint),
+                                              offsetof(WorldVertex, uvMaterial),
+                                              offsetof(WorldVertex, visibility),
+                                              offsetof(WorldVertex, response) };
+                for (GLuint i = 0; i < widths.size(); ++i)
                 {
-                    deleteShader_(*vertex);
-                    return tl::unexpected(fragment.error());
+                    vertexAttribPointer_(
+                        i,
+                        widths[i],
+                        GL_FLOAT,
+                        GL_FALSE,
+                        sizeof(WorldVertex),
+                        reinterpret_cast<const void *>(offsets[i]));
+                    enableVertexAttribArray_(i);
                 }
-
-                program_ = createProgram_();
-                attachShader_(program_, *vertex);
-                attachShader_(program_, *fragment);
-                linkProgram_(program_);
-                deleteShader_(*vertex);
-                deleteShader_(*fragment);
-
-                GLint linked = 0;
-                getProgramiv_(program_, GL_LINK_STATUS, &linked);
-                if (linked == 0)
-                {
-                    char message[1024]{};
-                    getProgramInfoLog_(program_,
-                                       sizeof(message),
-                                       nullptr,
-                                       message);
-                    return tl::unexpected(std::string(message));
-                }
-
-                GLuint array = 0;
-                genVertexArrays_(1, &array);
-                bindVertexArray_(array);
+                genVertexArrays_(1, &overlayArray_);
+                bindVertexArray_(overlayArray_);
                 genBuffers_(1, &buffer_);
                 bindBuffer_(GL_ARRAY_BUFFER, buffer_);
                 vertexAttribPointer_(0,
@@ -148,14 +166,6 @@ namespace TwentyThreeSeventeen::Rendering
                     GL_FALSE,
                     sizeof(Vertex),
                     reinterpret_cast<const void *>(offsetof(Vertex, red)));
-                vertexAttribPointer_(
-                    2,
-                    3,
-                    GL_FLOAT,
-                    GL_FALSE,
-                    sizeof(Vertex),
-                    reinterpret_cast<const void *>(offsetof(Vertex, textureU)));
-                enableVertexAttribArray_(2);
                 enableVertexAttribArray_(0);
                 enableVertexAttribArray_(1);
                 useProgram_(program_);
@@ -189,9 +199,18 @@ namespace TwentyThreeSeventeen::Rendering
             }
 
             auto
-            Draw(std::span<const Vertex> vertices, WindowSize renderSize)
+            Draw(std::span<const Vertex> vertices,
+                 WindowSize renderSize,
+                 const WorldFrame *world)
                 -> tl::expected<void, std::string> override
             {
+                if (world
+                    && (!world->mesh
+                        || world->indexCount > world->mesh->indices.size()
+                        || (cached_ != world->mesh
+                            && !world->mesh->ValidForUpload())))
+                    return tl::unexpected(std::string(
+                        "Invalid resident scene geometry or texture data."));
                 if (!SDL_GL_MakeCurrent(window_, context_))
                     return tl::unexpected(std::string(SDL_GetError()));
                 int width = 0;
@@ -202,7 +221,8 @@ namespace TwentyThreeSeventeen::Rendering
                     return {};
                 if (renderSize.width <= 0 || renderSize.height <= 0)
                     renderSize = windowSize;
-                const bool renderOffscreen = renderSize != windowSize;
+                const bool renderOffscreen
+                    = world != nullptr || renderSize != windowSize;
                 if (renderOffscreen)
                 {
                     if (!BindFrameTarget(renderSize))
@@ -213,6 +233,65 @@ namespace TwentyThreeSeventeen::Rendering
                     bindFramebuffer_(GL_FRAMEBUFFER, 0);
                 viewport_(0, 0, renderSize.width, renderSize.height);
                 clear_(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                enable_(GL_DEPTH_TEST);
+                if (world != nullptr)
+                {
+                    bindVertexArray_(worldArray_);
+                    bindBuffer_(GL_ARRAY_BUFFER, worldVbo_);
+                    bindTexture_(GL_TEXTURE_2D_ARRAY, surfaceArray_);
+                    if (cached_ != world->mesh)
+                    {
+                        const auto &mesh = *world->mesh;
+                        const auto verticesBytes
+                            = std::as_bytes(std::span(mesh.vertices));
+                        const auto indexBytes
+                            = std::as_bytes(std::span(mesh.indices));
+                        bufferData_(
+                            GL_ARRAY_BUFFER,
+                            static_cast<GLsizeiptr>(verticesBytes.size()),
+                            verticesBytes.data(),
+                            GL_STATIC_DRAW);
+                        bufferData_(GL_ELEMENT_ARRAY_BUFFER,
+                                    static_cast<GLsizeiptr>(indexBytes.size()),
+                                    indexBytes.data(),
+                                    GL_STATIC_DRAW);
+                        texImage3D_(GL_TEXTURE_2D_ARRAY,
+                                    0,
+                                    GL_RGBA8,
+                                    MaterialAtlas::kTileSize,
+                                    MaterialAtlas::kTileSize,
+                                    mesh.materials.LayerCount(),
+                                    0,
+                                    GL_RGBA,
+                                    GL_UNSIGNED_BYTE,
+                                    mesh.materials.rgba.data());
+                        generateMipmap_(GL_TEXTURE_2D_ARRAY);
+                        texParameteri_(GL_TEXTURE_2D_ARRAY,
+                                       GL_TEXTURE_MIN_FILTER,
+                                       GL_LINEAR_MIPMAP_LINEAR);
+                        texParameteri_(GL_TEXTURE_2D_ARRAY,
+                                       GL_TEXTURE_MAG_FILTER,
+                                       GL_LINEAR);
+                        if (getError_() != GL_NO_ERROR)
+                            return tl::unexpected(
+                                std::string("OpenGL world upload failed."));
+                        cached_ = world->mesh;
+                    }
+                    bindBuffer_(GL_UNIFORM_BUFFER, viewUbo_);
+                    bufferData_(GL_UNIFORM_BUFFER,
+                                sizeof(WorldView),
+                                &world->view,
+                                GL_STREAM_DRAW);
+                    bindBufferBase_(GL_UNIFORM_BUFFER, 0, viewUbo_);
+                    useProgram_(worldProgram_);
+                    drawElements_(GL_TRIANGLES,
+                                  static_cast<GLsizei>(world->indexCount),
+                                  GL_UNSIGNED_INT,
+                                  nullptr);
+                }
+                bindVertexArray_(overlayArray_);
+                bindBuffer_(GL_ARRAY_BUFFER, buffer_);
+                useProgram_(program_);
                 bufferData_(GL_ARRAY_BUFFER,
                             static_cast<GLsizeiptr>(vertices.size_bytes()),
                             vertices.data(),
@@ -222,23 +301,18 @@ namespace TwentyThreeSeventeen::Rendering
                             static_cast<GLsizei>(vertices.size()));
                 if (renderOffscreen)
                 {
-                    bindFramebuffer_(GL_DRAW_FRAMEBUFFER, 0);
+                    bindFramebuffer_(GL_FRAMEBUFFER, 0);
                     clear_(GL_COLOR_BUFFER_BIT);
                     const auto destination
                         = FitViewport(renderSize, windowSize);
-                    const auto bottom
-                        = height - destination.y - destination.size.height;
-                    blitFramebuffer_(0,
-                                     0,
-                                     renderSize.width,
-                                     renderSize.height,
-                                     destination.x,
-                                     bottom,
-                                     destination.x + destination.size.width,
-                                     bottom + destination.size.height,
-                                     GL_COLOR_BUFFER_BIT,
-                                     GL_LINEAR);
-                    bindFramebuffer_(GL_READ_FRAMEBUFFER, 0);
+                    viewport_(destination.x,
+                              height - destination.y - destination.size.height,
+                              destination.size.width,
+                              destination.size.height);
+                    disable_(GL_DEPTH_TEST);
+                    bindTexture_(GL_TEXTURE_2D, colorTexture_);
+                    useProgram_(presentProgram_);
+                    drawArrays_(GL_TRIANGLES, 0, 3);
                 }
                 if (!SDL_GL_SwapWindow(window_))
                     return tl::unexpected(std::string(SDL_GetError()));
@@ -252,8 +326,8 @@ namespace TwentyThreeSeventeen::Rendering
                 if (target_ == 0)
                 {
                     genFramebuffers_(1, &target_);
-                    genRenderbuffers_(static_cast<GLsizei>(attachments_.size()),
-                                      attachments_.data());
+                    genRenderbuffers_(1, &depthBuffer_);
+                    genTextures_(1, &colorTexture_);
                     if (target_ == 0)
                         return false;
                 }
@@ -261,28 +335,79 @@ namespace TwentyThreeSeventeen::Rendering
                 if (size == targetSize_)
                     return true;
                 targetSize_ = {};
-                constexpr std::array<GLenum, 2> formats{ GL_RGBA8,
-                                                         GL_DEPTH_COMPONENT24 };
-                constexpr std::array<GLenum, 2> slots{ GL_COLOR_ATTACHMENT0,
-                                                       GL_DEPTH_ATTACHMENT };
-                for (std::size_t index = 0; index < attachments_.size();
-                     ++index)
-                {
-                    bindRenderbuffer_(GL_RENDERBUFFER, attachments_[index]);
-                    renderbufferStorage_(GL_RENDERBUFFER,
-                                         formats[index],
-                                         size.width,
-                                         size.height);
-                    framebufferRenderbuffer_(GL_FRAMEBUFFER,
-                                             slots[index],
-                                             GL_RENDERBUFFER,
-                                             attachments_[index]);
-                }
+                bindTexture_(GL_TEXTURE_2D, colorTexture_);
+                texImage2D_(GL_TEXTURE_2D,
+                            0,
+                            GL_RGBA8,
+                            size.width,
+                            size.height,
+                            0,
+                            GL_RGBA,
+                            GL_UNSIGNED_BYTE,
+                            nullptr);
+                texParameteri_(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                texParameteri_(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                texParameteri_(GL_TEXTURE_2D,
+                               GL_TEXTURE_WRAP_S,
+                               GL_CLAMP_TO_EDGE);
+                texParameteri_(GL_TEXTURE_2D,
+                               GL_TEXTURE_WRAP_T,
+                               GL_CLAMP_TO_EDGE);
+                framebufferTexture2D_(GL_FRAMEBUFFER,
+                                      GL_COLOR_ATTACHMENT0,
+                                      GL_TEXTURE_2D,
+                                      colorTexture_,
+                                      0);
+                bindRenderbuffer_(GL_RENDERBUFFER, depthBuffer_);
+                renderbufferStorage_(GL_RENDERBUFFER,
+                                     GL_DEPTH_COMPONENT24,
+                                     size.width,
+                                     size.height);
+                framebufferRenderbuffer_(GL_FRAMEBUFFER,
+                                         GL_DEPTH_ATTACHMENT,
+                                         GL_RENDERBUFFER,
+                                         depthBuffer_);
                 if (framebufferStatus_(GL_FRAMEBUFFER)
                     != GL_FRAMEBUFFER_COMPLETE)
                     return false;
                 targetSize_ = size;
                 return true;
+            }
+
+            auto
+            Link(const char *vert, const char *frag)
+                -> tl::expected<GLuint, std::string>
+            {
+                const auto vertex = Compile(GL_VERTEX_SHADER, vert);
+                if (!vertex)
+                    return tl::unexpected(vertex.error());
+                const auto fragment = Compile(GL_FRAGMENT_SHADER, frag);
+                if (!fragment)
+                {
+                    deleteShader_(*vertex);
+                    return tl::unexpected(fragment.error());
+                }
+
+                const auto program = createProgram_();
+                attachShader_(program, *vertex);
+                attachShader_(program, *fragment);
+                linkProgram_(program);
+                deleteShader_(*vertex);
+                deleteShader_(*fragment);
+
+                GLint linked = 0;
+                getProgramiv_(program, GL_LINK_STATUS, &linked);
+                if (linked == 0)
+                {
+                    char message[1024]{};
+                    getProgramInfoLog_(program,
+                                       sizeof(message),
+                                       nullptr,
+                                       message);
+                    return tl::unexpected(std::string(message));
+                }
+
+                return program;
             }
 
             auto
@@ -312,7 +437,23 @@ namespace TwentyThreeSeventeen::Rendering
             GLuint buffer_{};
             GLuint program_{};
             GLuint target_{};
-            std::array<GLuint, 2> attachments_{};
+            GLuint overlayArray_{}, worldArray_{}, worldVbo_{}, worldIbo_{},
+                viewUbo_{}, surfaceArray_{};
+            GLuint worldProgram_{}, presentProgram_{}, depthBuffer_{},
+                colorTexture_{};
+            std::shared_ptr<const WorldMesh> cached_;
+
+            decltype(&glDrawElements) drawElements_{};
+            decltype(&glTexImage2D) texImage2D_{};
+            PFNGLTEXIMAGE3DPROC texImage3D_{};
+            decltype(&glGenTextures) genTextures_{};
+            decltype(&glBindTexture) bindTexture_{};
+            decltype(&glTexParameteri) texParameteri_{};
+            PFNGLGENERATEMIPMAPPROC generateMipmap_{};
+            PFNGLBINDBUFFERBASEPROC bindBufferBase_{};
+            PFNGLFRAMEBUFFERTEXTURE2DPROC framebufferTexture2D_{};
+            decltype(&glGetError) getError_{};
+            decltype(&glDisable) disable_{};
             WindowSize targetSize_{};
             PFNGLGENFRAMEBUFFERSPROC genFramebuffers_{};
             PFNGLBINDFRAMEBUFFERPROC bindFramebuffer_{};
@@ -321,7 +462,6 @@ namespace TwentyThreeSeventeen::Rendering
             PFNGLRENDERBUFFERSTORAGEPROC renderbufferStorage_{};
             PFNGLFRAMEBUFFERRENDERBUFFERPROC framebufferRenderbuffer_{};
             PFNGLCHECKFRAMEBUFFERSTATUSPROC framebufferStatus_{};
-            PFNGLBLITFRAMEBUFFERPROC blitFramebuffer_{};
             PFNGLGENVERTEXARRAYSPROC genVertexArrays_{};
             PFNGLBINDVERTEXARRAYPROC bindVertexArray_{};
             PFNGLGENBUFFERSPROC genBuffers_{};

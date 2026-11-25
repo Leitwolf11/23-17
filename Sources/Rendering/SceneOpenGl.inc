@@ -2,84 +2,220 @@
 constexpr const char *kVertSource = R"glsl(// SPDX-License-Identifier: MIT
 #version 420 core
 #define OPENGL_SCENE 1
-layout(location = 0) in vec4 clipPosition;
-layout(location = 1) in vec3 surfaceColor;
-layout(location = 2) in vec3 materialCoordinates;
-layout(location = 0) out vec3 color;
-layout(location = 1) out vec2 texel;
-layout(location = 2) flat out int material;
-
+layout(location=0) in vec4 clipPosition;
+layout(location=1) in vec3 surfaceColor;
+layout(location=0) out vec3 color;
 void main()
 {
-#ifdef OPENGL_SCENE
-    gl_Position = vec4(clipPosition.xy, 2.0 * clipPosition.z - clipPosition.w, clipPosition.w);
-#else
     gl_Position = clipPosition;
+#ifdef OPENGL_SCENE
+    gl_Position.z = 2.0 * clipPosition.z - clipPosition.w;
 #endif
     color = surfaceColor;
-    texel = materialCoordinates.xy;
-    material = int(materialCoordinates.z);
 }
 )glsl";
 constexpr const char *kFragSource = R"glsl(// SPDX-License-Identifier: MIT
 #version 420 core
 #define OPENGL_SCENE 1
-layout(location = 0) in vec3 color;
-layout(location = 1) in vec2 texel;
-layout(location = 2) flat in int material;
-layout(location = 0) out vec4 outputColor;
-
-float hashCell(vec2 samplePoint)
+layout(location=0) in vec3 color;
+layout(location=0) out vec4 outputColor;
+void main() { outputColor = vec4(color, 1.0); }
+)glsl";
+constexpr const char *kWorldVertSource = R"glsl(// SPDX-License-Identifier: MIT
+#version 420 core
+#define OPENGL_SCENE 1
+layout(location=0) in vec3 position;
+layout(location=1) in vec3 normal;
+layout(location=2) in vec4 tangent;
+layout(location=3) in vec3 tint;
+layout(location=4) in vec3 coordinates;
+layout(location=5) in vec4 visibility;
+layout(location=6) in vec4 response;
+#ifdef OPENGL_SCENE
+layout(std140, binding=0)
+#else
+layout(std140, set=1, binding=0)
+#endif
+uniform Camera {
+    vec4 eye, right, up, forward;
+    vec4 lamps[4], spectra[4];
+    vec4 probeCenter, probeHalfSize;
+    vec4 streetCenter, streetHalfSize, streetLamp;
+};
+layout(location=0) out vec2 uv;
+layout(location=1) flat out int layer;
+layout(location=2) out vec3 surfaceTint;
+layout(location=3) out vec4 lightVisibility;
+layout(location=4) out vec3 worldPosition;
+layout(location=5) out vec3 worldNormal;
+layout(location=6) out vec4 worldTangent;
+layout(location=7) out vec2 ambientEmission;
+layout(location=8) out float fogAmount;
+void main()
 {
-    vec3 point = fract(vec3(samplePoint.x, samplePoint.y, samplePoint.x) * vec3(0.1031, 0.1173, 0.1378));
-    point += dot(point, point.yzx + 17.13);
-    return fract((point.x + point.y) * point.z);
+    vec3 posed=position;
+    posed.x+=response.w*0.008*sin(1.20*probeCenter.w+position.x);
+    vec3 relative = posed - eye.xyz;
+    float z = dot(relative, forward.xyz);
+    const float nearPlane = 0.06, farPlane = 46.0;
+    gl_Position = vec4(dot(relative, right.xyz)*right.w, dot(relative, up.xyz)*up.w,
+                       (z-nearPlane)*farPlane/(farPlane-nearPlane), z);
+#ifdef OPENGL_SCENE
+    gl_Position.z = 2.0 * gl_Position.z - gl_Position.w;
+#endif
+    worldNormal=normal;
+    worldTangent=tangent;
+    worldPosition=posed;
+    lightVisibility=visibility;
+    layer=forward.w>0.0 ? int(coordinates.z)-1 : -1;
+    uv=coordinates.xy;
+    surfaceTint=tint;
+    ambientEmission=response.xy * mix(1.0, eye.w, response.z);
+    fogAmount=1.0-exp(-0.022*max(z-2.0,0.0)*exp(-0.12*max(position.y,0.0)));
 }
-
-float wornSurface(vec2 samplePoint)
-{
-    vec2 cell = floor(samplePoint);
-    vec2 edge = fract(samplePoint);
-    edge = edge * edge * (3.0 - 2.0 * edge);
-    float upper = mix(hashCell(cell), hashCell(cell + vec2(1.0, 0.0)), edge.x);
-    float lower = mix(hashCell(cell + vec2(0.0, 1.0)), hashCell(cell + vec2(1.0)), edge.x);
-    return mix(upper, lower, edge.y);
-}
+)glsl";
+constexpr const char *kWorldFragSource = R"glsl(// SPDX-License-Identifier: MIT
+#version 420 core
+#define OPENGL_SCENE 1
+layout(location=0) in vec2 uv;
+layout(location=1) flat in int layer;
+layout(location=2) in vec3 surfaceTint;
+layout(location=3) in vec4 lightVisibility;
+layout(location=4) in vec3 worldPosition;
+layout(location=5) in vec3 worldNormal;
+layout(location=6) in vec4 worldTangent;
+layout(location=7) in vec2 ambientEmission;
+layout(location=8) in float fogAmount;
+#ifdef OPENGL_SCENE
+layout(std140,binding=0)
+#else
+layout(std140,set=3,binding=0)
+#endif
+uniform Camera {
+    vec4 eye, right, up, forward;
+    vec4 lamps[4], spectra[4];
+    vec4 probeCenter, probeHalfSize;
+    vec4 streetCenter, streetHalfSize, streetLamp;
+};
+#ifdef OPENGL_SCENE
+layout(binding=0)
+#else
+layout(set=2,binding=0)
+#endif
+uniform sampler2DArray surfaces;
+layout(location=0) out vec4 outputColor;
 
 void main()
 {
-    float tone = 1.0;
-    if (material != 0)
+    vec3 albedo = surfaceTint * surfaceTint;
+    vec3 n = vec3(0,0,1);
+    float rough = 0.72, metal = 0.0, ao = 1.0;
+    if (layer >= 0)
     {
-        float broad = wornSurface(texel * 3.1);
-        float footprint = max(length(dFdx(texel)), length(dFdy(texel)));
-        float fineWeight = 1.0 - smoothstep(0.008, 0.033, footprint);
-        if (material == 3)
-        {
-            float grain = wornSurface(texel * vec2(42.0, 2.2));
-            float bands = sin((texel.x + (broad - 0.5) * 0.048) * 158.0);
-            tone = 0.80 + 0.19 * broad + fineWeight * (0.18 * grain + 0.045 * bands);
-        }
-        else
-        {
-            float fine = hashCell(floor(texel * 92.0));
-            if (material == 1)
-            {
-                float runoff = 0.5 + 0.5 * sin(texel.x * 23.0 + 4.0 * broad);
-                float damp = smoothstep(0.43, 0.86, broad * 0.74 + runoff * 0.26);
-                tone = 0.91 + 0.18 * broad - 0.27 * damp + (fine - 0.5) * fineWeight * 0.042;
-            }
-            else if (material == 2)
-            {
-                float chips = smoothstep(0.65, 0.94, fine) - 0.7 * (1.0 - smoothstep(0.06, 0.24, fine));
-                tone = 0.81 + 0.25 * broad + fineWeight * chips * 0.22;
-            }
-            else if (material == 4)
-                tone = 0.69 + 0.42 * broad + (fine - 0.5) * fineWeight * 0.10;
-            else
-                tone = 0.89 + 0.15 * broad + (fine - 0.5) * fineWeight * 0.04;
-        }
+        vec4 base = texture(surfaces, vec3(uv, layer));
+        vec4 packedMap = texture(surfaces, vec3(uv, layer + (textureSize(surfaces,0).z-int(probeHalfSize.w))/2));
+        // The tint is the art-directed palette; scans retain their local color and contrast.
+        albedo = clamp(albedo * (base.rgb * base.rgb * 3.4), 0.0, 1.0);
+        vec2 xy = packedMap.xy * 2.0 - 1.0;
+        n = normalize(vec3(xy, sqrt(max(0.001, 1.0-dot(xy,xy)))));
+        rough = clamp(packedMap.z, 0.16, 1.0);
+        metal = packedMap.w;
+        ao = base.a;
+        if (layer == 3) rough = max(0.13,rough*0.42); // Rain film on asphalt
     }
-    outputColor = vec4(color * tone, 1.0);
+    vec3 geometric=normalize(worldNormal);
+    vec3 tangent=normalize(worldTangent.xyz-geometric*dot(geometric,worldTangent.xyz));
+    n=normalize(mat3(tangent,cross(geometric,tangent)*worldTangent.w,geometric)*n);
+    vec3 v=normalize(eye.xyz-worldPosition);
+    float nv=max(dot(n,v),0.001);
+    vec3 f0=mix(vec3(0.04),albedo,metal);
+    float a=rough*rough,a2=a*a,k=(rough+1.0)*(rough+1.0)*0.125;
+    vec3 direct=vec3(0.0);
+    bool outside=probeHalfSize.w>1.5 && any(greaterThan(abs(worldPosition-probeCenter.xyz),probeHalfSize.xyz+vec3(0.12)));
+    for (int i=0;i<4;++i)
+    {
+        vec4 lamp=outside && i==0 ? streetLamp : lamps[i];
+        float power=lamp.w*lightVisibility[i];
+        if(power<0.001) continue;
+        vec3 delta=lamp.xyz-worldPosition;
+        float d2=max(dot(delta,delta),0.001);
+        vec3 l=delta*inversesqrt(d2);
+        float nl=max(dot(n,l),0.0);
+        vec3 h=normalize(v+l);
+        float nh=max(dot(n,h),0.0),vh=max(dot(v,h),0.0);
+        float d=nh*nh*(a2-1.0)+1.0;
+        float distribution=a2/max(3.14159*d*d,0.00001);
+        float geom=0.25/((nv*(1.0-k)+k)*(nl*(1.0-k)+k));
+        vec3 fresnel=f0+(1.0-f0)*pow(1.0-vh,5.0);
+        vec3 diffuse=albedo*(1.0-metal)*(1.0-fresnel);
+        direct+=(diffuse+fresnel*distribution*geom)*spectra[i].rgb*(nl*power/(1.0+d2));
+    }
+    vec3 linearColor=albedo*ambientEmission.x*ao*vec3(0.77,0.86,1.0)+direct+albedo*ambientEmission.y;
+    if (layer >= 0)
+    {
+        vec3 probeOffset=worldPosition-probeCenter.xyz,probeExtent=probeHalfSize.xyz;
+        if(outside){probeOffset=worldPosition-streetCenter.xyz;probeExtent=streetHalfSize.xyz;}
+        vec3 ray=reflect(-v,n);
+        vec3 signedRay=mix(vec3(-1.0),vec3(1.0),greaterThanEqual(ray,vec3(0)));
+        vec3 dist=(signedRay*probeExtent-probeOffset)/(signedRay*max(abs(ray),vec3(0.0001)));
+        float travel=min(min(dist.x,dist.y),dist.z);
+        if (all(lessThan(abs(probeOffset),probeExtent+vec3(0.02))))
+            ray=normalize(probeOffset+ray*max(0.0,travel));
+        vec2 coord=vec2(atan(ray.z,ray.x)*0.15915494+0.5, asin(clamp(ray.y,-1.0,1.0))*0.31830989+0.5);
+        vec3 radiance=textureLod(surfaces,vec3(coord,textureSize(surfaces,0).z-int(probeHalfSize.w)+(outside?1:0)),rough*rough*8.0).rgb;
+        vec3 envFresnel=f0+(max(vec3(1.0-rough),f0)-f0)*pow(1.0-nv,5.0);
+        linearColor+=4.0*radiance*radiance*envFresnel*mix(ao,1.0,0.25);
+    }
+    linearColor=mix(linearColor,vec3(0.022,0.033,0.046),fogAmount);
+    // Fitted filmic shoulder and toe followed by the SDR display transfer.
+    vec3 mapped=clamp((linearColor*(2.51*linearColor+0.03))/(linearColor*(2.43*linearColor+0.59)+0.14),0.0,1.0);
+    outputColor=vec4(mix(12.92*mapped,1.055*pow(mapped,vec3(1.0/2.4))-0.055,
+                         greaterThan(mapped,vec3(0.0031308))),1);
+}
+)glsl";
+constexpr const char *kPresentVertSource = R"glsl(// SPDX-License-Identifier: MIT
+#version 420 core
+#define OPENGL_SCENE 1
+layout(location=0) out vec2 uv;
+void main()
+{
+#ifdef OPENGL_SCENE
+    int vertex = gl_VertexID;
+#else
+    int vertex = gl_VertexIndex;
+#endif
+    uv = vec2((vertex << 1) & 2, vertex & 2);
+    gl_Position = vec4(uv * 2.0 - 1.0, 0, 1);
+#ifndef OPENGL_SCENE
+    uv.y = 1.0 - uv.y;
+#endif
+}
+)glsl";
+constexpr const char *kPresentFragSource = R"glsl(// SPDX-License-Identifier: MIT
+#version 420 core
+#define OPENGL_SCENE 1
+layout(location=0) in vec2 uv;
+layout(location=0) out vec4 outputColor;
+#ifdef OPENGL_SCENE
+layout(binding=0)
+#else
+layout(set=2,binding=0)
+#endif
+uniform sampler2D frameColor;
+float luma(vec3 rgb) { return dot(rgb, vec3(0.299,0.587,0.114)); }
+void main()
+{
+    vec2 pixel = 1.0 / vec2(textureSize(frameColor, 0));
+    vec3 center = texture(frameColor,uv).rgb;
+    float a = luma(texture(frameColor,uv + pixel*vec2(-0.5,-0.5)).rgb);
+    float b = luma(texture(frameColor,uv + pixel*vec2(0.5,-0.5)).rgb);
+    float c = luma(texture(frameColor,uv + pixel*vec2(-0.5,0.5)).rgb);
+    float d = luma(texture(frameColor,uv + pixel*vec2(0.5,0.5)).rgb);
+    float hi = max(max(a,b),max(c,d)), lo = min(min(a,b),min(c,d));
+    if (hi-lo < max(0.035,hi*0.12)) { outputColor = vec4(center,1); return; }
+    vec2 gradient = vec2(c+d-a-b,a+c-b-d);
+    vec2 axis = clamp(gradient/(min(abs(gradient.x),abs(gradient.y))+0.04),-3.0,3.0)*pixel;
+    vec3 smoothColor = 0.5*(texture(frameColor,uv-axis*0.25).rgb + texture(frameColor,uv+axis*0.25).rgb);
+    outputColor = vec4(mix(center,smoothColor,0.75),1);
 }
 )glsl";

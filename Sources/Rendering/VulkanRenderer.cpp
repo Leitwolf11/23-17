@@ -22,6 +22,16 @@ namespace TwentyThreeSeventeen::Rendering
                 if (device_ != nullptr)
                 {
                     SDL_WaitForGPUIdle(device_);
+                    ReleaseWorld();
+                    if (worldPipeline_)
+                        SDL_ReleaseGPUGraphicsPipeline(device_, worldPipeline_);
+                    if (presentPipeline_)
+                        SDL_ReleaseGPUGraphicsPipeline(device_,
+                                                       presentPipeline_);
+                    if (sampler_)
+                        SDL_ReleaseGPUSampler(device_, sampler_);
+                    if (edgeSampler_)
+                        SDL_ReleaseGPUSampler(device_, edgeSampler_);
                     if (colorTarget_ != nullptr)
                         SDL_ReleaseGPUTexture(device_, colorTarget_);
                     if (depth_ != nullptr)
@@ -40,7 +50,7 @@ namespace TwentyThreeSeventeen::Rendering
             }
 
             auto
-            Initialize(WindowSize size, bool sync)
+            Initialize(WindowSize size, bool sync, bool requireHardware)
                 -> tl::expected<void, std::string>
             {
                 const auto properties = SDL_CreateProperties();
@@ -54,7 +64,7 @@ namespace TwentyThreeSeventeen::Rendering
                 SDL_SetBooleanProperty(
                     properties,
                     SDL_PROP_GPU_DEVICE_CREATE_VULKAN_REQUIRE_HARDWARE_ACCELERATION_BOOLEAN,
-                    true);
+                    requireHardware);
                 // These optional features are unnecessary for the apartment
                 // pass.
                 SDL_SetBooleanProperty(
@@ -116,64 +126,77 @@ namespace TwentyThreeSeventeen::Rendering
                 if (vertices_ == nullptr || upload_ == nullptr)
                     return tl::unexpected(std::string(SDL_GetError()));
 
-                SDL_GPUShaderCreateInfo shader{};
-                shader.code_size = sizeof(kVertSpirv);
-                shader.code = kVertSpirv;
-                shader.entrypoint = "main";
-                shader.format = SDL_GPU_SHADERFORMAT_SPIRV;
-                shader.stage = SDL_GPU_SHADERSTAGE_VERTEX;
-                auto *vertex = SDL_CreateGPUShader(device_, &shader);
-                if (vertex == nullptr)
-                    return tl::unexpected(std::string(SDL_GetError()));
-                shader.code_size = sizeof(kFragSpirv);
-                shader.code = kFragSpirv;
-                shader.stage = SDL_GPU_SHADERSTAGE_FRAGMENT;
-                auto *fragment = SDL_CreateGPUShader(device_, &shader);
-                if (fragment == nullptr)
-                {
-                    const std::string error = SDL_GetError();
-                    SDL_ReleaseGPUShader(device_, vertex);
-                    return tl::unexpected(error);
-                }
-
-                SDL_GPUVertexBufferDescription buffer{};
-                buffer.pitch = sizeof(Vertex);
-                buffer.input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX;
-                const SDL_GPUVertexAttribute attributes[]{
+                colorFormat_
+                    = SDL_GetGPUSwapchainTextureFormat(device_, window_);
+                constexpr SDL_GPUVertexAttribute overlayAttributes[]{
                     { 0, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4, 0 },
                     { 1,
                       0,
                       SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-                      offsetof(Vertex, red) },
-                    { 2,
+                      offsetof(Vertex, red) }
+                };
+                constexpr SDL_GPUVertexAttribute worldAttributes[]{
+                    { 0,
                       0,
                       SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-                      offsetof(Vertex, textureU) },
+                      offsetof(WorldVertex, position) },
+                    { 1,
+                      0,
+                      SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
+                      offsetof(WorldVertex, normal) },
+                    { 2,
+                      0,
+                      SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4,
+                      offsetof(WorldVertex, tangent) },
+                    { 3,
+                      0,
+                      SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
+                      offsetof(WorldVertex, tint) },
+                    { 4,
+                      0,
+                      SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
+                      offsetof(WorldVertex, uvMaterial) },
+                    { 5,
+                      0,
+                      SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4,
+                      offsetof(WorldVertex, visibility) },
+                    { 6,
+                      0,
+                      SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4,
+                      offsetof(WorldVertex, response) }
                 };
-                SDL_GPUColorTargetDescription color{};
-                colorFormat_
-                    = SDL_GetGPUSwapchainTextureFormat(device_, window_);
-                color.format = colorFormat_;
-                SDL_GPUGraphicsPipelineCreateInfo layout{};
-                layout.vertex_shader = vertex;
-                layout.fragment_shader = fragment;
-                layout.vertex_input_state = { &buffer, 1, attributes, 3 };
-                layout.primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
-                layout.rasterizer_state.enable_depth_clip = true;
-                layout.depth_stencil_state.compare_op = SDL_GPU_COMPAREOP_LESS;
-                layout.depth_stencil_state.enable_depth_test = true;
-                layout.depth_stencil_state.enable_depth_write = true;
-                layout.target_info.color_target_descriptions = &color;
-                layout.target_info.num_color_targets = 1;
-                layout.target_info.depth_stencil_format = kDepthFormat;
-                layout.target_info.has_depth_stencil_target = true;
-                pipeline_ = SDL_CreateGPUGraphicsPipeline(device_, &layout);
-                const std::string error = SDL_GetError();
-                SDL_ReleaseGPUShader(device_, vertex);
-                SDL_ReleaseGPUShader(device_, fragment);
-                if (pipeline_ == nullptr)
-                    return tl::unexpected(error);
-
+                pipeline_ = Pipeline(kVertSpirv,
+                                     kFragSpirv,
+                                     overlayAttributes,
+                                     sizeof(Vertex),
+                                     0,
+                                     0);
+                worldPipeline_ = Pipeline(kWorldVertSpirv,
+                                          kWorldFragSpirv,
+                                          worldAttributes,
+                                          sizeof(WorldVertex),
+                                          1,
+                                          1);
+                presentPipeline_ = Pipeline(kPresentVertSpirv,
+                                            kPresentFragSpirv,
+                                            {},
+                                            0,
+                                            0,
+                                            1);
+                SDL_GPUSamplerCreateInfo sampler{};
+                sampler.min_filter = SDL_GPU_FILTER_LINEAR;
+                sampler.mag_filter = SDL_GPU_FILTER_LINEAR;
+                sampler.mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_LINEAR;
+                sampler.max_lod = 9;
+                sampler_ = SDL_CreateGPUSampler(device_, &sampler);
+                sampler.address_mode_u
+                    = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
+                sampler.address_mode_v
+                    = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
+                edgeSampler_ = SDL_CreateGPUSampler(device_, &sampler);
+                if (!pipeline_ || !worldPipeline_ || !presentPipeline_
+                    || !sampler_ || !edgeSampler_)
+                    return tl::unexpected(std::string(SDL_GetError()));
                 SDL_Log("Vulkan renderer: %s", SDL_GetGPUDeviceDriver(device_));
                 return {};
             }
@@ -191,9 +214,26 @@ namespace TwentyThreeSeventeen::Rendering
             }
 
             auto
-            Draw(std::span<const Vertex> frame, WindowSize renderSize)
+            Draw(std::span<const Vertex> frame,
+                 WindowSize renderSize,
+                 const WorldFrame *world)
                 -> tl::expected<void, std::string> override
             {
+                if (world
+                    && (!world->mesh
+                        || world->indexCount > world->mesh->indices.size()
+                        || (cached_ != world->mesh
+                            && !world->mesh->ValidForUpload())))
+                    return tl::unexpected(std::string(
+                        "Invalid resident scene geometry or texture data."));
+                if (world && cached_ != world->mesh)
+                {
+                    if (!UploadWorld(*world->mesh))
+                        return tl::unexpected(
+                            std::string("Vulkan world upload: ")
+                            + SDL_GetError());
+                    cached_ = world->mesh;
+                }
                 if (frame.size_bytes() > kVertexBufferSize)
                     return tl::unexpected(
                         std::string("The Vulkan vertex buffer is full."));
@@ -230,7 +270,8 @@ namespace TwentyThreeSeventeen::Rendering
                                              static_cast<int>(height) };
                 if (renderSize.width <= 0 || renderSize.height <= 0)
                     renderSize = windowSize;
-                const bool renderOffscreen = renderSize != windowSize;
+                const bool renderOffscreen
+                    = world != nullptr || renderSize != windowSize;
                 const auto renderWidth = static_cast<Uint32>(renderSize.width);
                 const auto renderHeight
                     = static_cast<Uint32>(renderSize.height);
@@ -273,6 +314,33 @@ namespace TwentyThreeSeventeen::Rendering
                 depth.cycle = true;
                 auto *pass
                     = SDL_BeginGPURenderPass(commands, &color, 1, &depth);
+                if (world)
+                {
+                    SDL_BindGPUGraphicsPipeline(pass, worldPipeline_);
+                    SDL_PushGPUVertexUniformData(commands,
+                                                 0,
+                                                 &world->view,
+                                                 sizeof(WorldView));
+                    SDL_PushGPUFragmentUniformData(commands,
+                                                   0,
+                                                   &world->view,
+                                                   sizeof(WorldView));
+                    const SDL_GPUTextureSamplerBinding materials{ atlas_,
+                                                                  sampler_ };
+                    SDL_BindGPUFragmentSamplers(pass, 0, &materials, 1);
+                    const SDL_GPUBufferBinding vb{ worldVbo_, 0 },
+                        ib{ worldIbo_, 0 };
+                    SDL_BindGPUVertexBuffers(pass, 0, &vb, 1);
+                    SDL_BindGPUIndexBuffer(pass,
+                                           &ib,
+                                           SDL_GPU_INDEXELEMENTSIZE_32BIT);
+                    SDL_DrawGPUIndexedPrimitives(pass,
+                                                 world->indexCount,
+                                                 1,
+                                                 0,
+                                                 0,
+                                                 0);
+                }
                 SDL_BindGPUGraphicsPipeline(pass, pipeline_);
                 const SDL_GPUBufferBinding binding{ vertices_, 0 };
                 SDL_BindGPUVertexBuffers(pass, 0, &binding, 1);
@@ -287,26 +355,200 @@ namespace TwentyThreeSeventeen::Rendering
                 {
                     const auto destination
                         = FitViewport(renderSize, windowSize);
-                    SDL_GPUBlitInfo blit{};
-                    blit.source = { colorTarget_, 0,           0, 0, 0,
-                                    renderWidth,  renderHeight };
-                    blit.destination
-                        = { target,
-                            0,
-                            0,
-                            static_cast<Uint32>(destination.x),
-                            static_cast<Uint32>(destination.y),
-                            static_cast<Uint32>(destination.size.width),
-                            static_cast<Uint32>(destination.size.height) };
-                    blit.load_op = SDL_GPU_LOADOP_CLEAR;
-                    blit.clear_color = color.clear_color;
-                    blit.filter = SDL_GPU_FILTER_LINEAR;
-                    SDL_BlitGPUTexture(commands, &blit);
+                    SDL_GPUColorTargetInfo output{};
+                    output.texture = target;
+                    output.load_op = SDL_GPU_LOADOP_CLEAR;
+                    output.store_op = SDL_GPU_STOREOP_STORE;
+                    output.clear_color = color.clear_color;
+                    auto *present
+                        = SDL_BeginGPURenderPass(commands, &output, 1, nullptr);
+                    const SDL_GPUViewport viewport{
+                        static_cast<float>(destination.x),
+                        static_cast<float>(destination.y),
+                        static_cast<float>(destination.size.width),
+                        static_cast<float>(destination.size.height),
+                        0,
+                        1
+                    };
+                    SDL_SetGPUViewport(present, &viewport);
+                    SDL_BindGPUGraphicsPipeline(present, presentPipeline_);
+                    const SDL_GPUTextureSamplerBinding input{ colorTarget_,
+                                                              edgeSampler_ };
+                    SDL_BindGPUFragmentSamplers(present, 0, &input, 1);
+                    SDL_DrawGPUPrimitives(present, 3, 1, 0, 0);
+                    SDL_EndGPURenderPass(present);
                 }
                 return Submit(commands);
             }
 
         private:
+            auto
+            Pipeline(std::span<const Uint8> vert,
+                     std::span<const Uint8> frag,
+                     std::span<const SDL_GPUVertexAttribute> attributes,
+                     Uint32 stride,
+                     Uint32 uniforms,
+                     Uint32 samplers) -> SDL_GPUGraphicsPipeline *
+            {
+                SDL_GPUShaderCreateInfo shader{};
+                shader.code_size = vert.size();
+                shader.code = vert.data();
+                shader.entrypoint = "main";
+                shader.format = SDL_GPU_SHADERFORMAT_SPIRV;
+                shader.stage = SDL_GPU_SHADERSTAGE_VERTEX;
+                shader.num_uniform_buffers = uniforms;
+                auto *vertex = SDL_CreateGPUShader(device_, &shader);
+                if (!vertex)
+                    return nullptr;
+                shader.code_size = frag.size();
+                shader.code = frag.data();
+                shader.stage = SDL_GPU_SHADERSTAGE_FRAGMENT;
+                shader.num_uniform_buffers = uniforms;
+                shader.num_samplers = samplers;
+                auto *fragment = SDL_CreateGPUShader(device_, &shader);
+                if (!fragment)
+                {
+                    SDL_ReleaseGPUShader(device_, vertex);
+                    return nullptr;
+                }
+                SDL_GPUVertexBufferDescription buffer{};
+                buffer.pitch = stride;
+                SDL_GPUColorTargetDescription color{};
+                color.format = colorFormat_;
+                SDL_GPUGraphicsPipelineCreateInfo layout{};
+                layout.vertex_shader = vertex;
+                layout.fragment_shader = fragment;
+                if (!attributes.empty())
+                    layout.vertex_input_state
+                        = { &buffer,
+                            1,
+                            attributes.data(),
+                            static_cast<Uint32>(attributes.size()) };
+                layout.primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
+                layout.rasterizer_state.enable_depth_clip = true;
+                layout.depth_stencil_state.compare_op = SDL_GPU_COMPAREOP_LESS;
+                layout.depth_stencil_state.enable_depth_test = stride > 0;
+                layout.depth_stencil_state.enable_depth_write = stride > 0;
+                layout.target_info.color_target_descriptions = &color;
+                layout.target_info.num_color_targets = 1;
+                layout.target_info.depth_stencil_format = kDepthFormat;
+                layout.target_info.has_depth_stencil_target = stride > 0;
+                auto *pipeline
+                    = SDL_CreateGPUGraphicsPipeline(device_, &layout);
+                SDL_ReleaseGPUShader(device_, vertex);
+                SDL_ReleaseGPUShader(device_, fragment);
+                return pipeline;
+            }
+
+            void
+            ReleaseWorld()
+            {
+                if (worldVbo_)
+                    SDL_ReleaseGPUBuffer(device_, worldVbo_);
+                if (worldIbo_)
+                    SDL_ReleaseGPUBuffer(device_, worldIbo_);
+                if (atlas_)
+                    SDL_ReleaseGPUTexture(device_, atlas_);
+                worldVbo_ = nullptr;
+                worldIbo_ = nullptr;
+                atlas_ = nullptr;
+                cached_.reset();
+            }
+
+            auto
+            UploadWorld(const WorldMesh &mesh) -> bool
+            {
+                ReleaseWorld();
+                const auto vertices = std::as_bytes(std::span(mesh.vertices));
+                const auto indices = std::as_bytes(std::span(mesh.indices));
+                const auto texels
+                    = std::as_bytes(std::span(mesh.materials.rgba));
+                if (vertices.size() + indices.size() + texels.size()
+                    > UINT32_MAX)
+                    return SDL_SetError("World exceeds the upload size limit.");
+                SDL_GPUBufferCreateInfo buffer{};
+                buffer.usage = SDL_GPU_BUFFERUSAGE_VERTEX;
+                buffer.size = static_cast<Uint32>(vertices.size());
+                worldVbo_ = SDL_CreateGPUBuffer(device_, &buffer);
+                buffer.usage = SDL_GPU_BUFFERUSAGE_INDEX;
+                buffer.size = static_cast<Uint32>(indices.size());
+                worldIbo_ = SDL_CreateGPUBuffer(device_, &buffer);
+                SDL_GPUTextureCreateInfo texture{};
+                texture.type = SDL_GPU_TEXTURETYPE_2D_ARRAY;
+                texture.format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM;
+                texture.usage = SDL_GPU_TEXTUREUSAGE_SAMPLER
+                                | SDL_GPU_TEXTUREUSAGE_COLOR_TARGET;
+                texture.width = MaterialAtlas::kTileSize;
+                texture.height = MaterialAtlas::kTileSize;
+                texture.layer_count_or_depth
+                    = static_cast<Uint32>(mesh.materials.LayerCount());
+                texture.num_levels = 10;
+                atlas_ = SDL_CreateGPUTexture(device_, &texture);
+                if (!worldVbo_ || !worldIbo_ || !atlas_)
+                    return false;
+                SDL_GPUTransferBufferCreateInfo staging{};
+                staging.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
+                staging.size = static_cast<Uint32>(
+                    vertices.size() + indices.size() + texels.size());
+                auto *upload = SDL_CreateGPUTransferBuffer(device_, &staging);
+                if (!upload)
+                    return false;
+                auto *mapped = static_cast<std::byte *>(
+                    SDL_MapGPUTransferBuffer(device_, upload, false));
+                if (!mapped)
+                {
+                    SDL_ReleaseGPUTransferBuffer(device_, upload);
+                    return false;
+                }
+                // Texels start at a naturally aligned offset for Vulkan image
+                // copies.
+                auto destination
+                    = std::span(mapped, static_cast<std::size_t>(staging.size));
+                for (const auto part : { texels, vertices, indices })
+                {
+                    std::ranges::copy(part, destination.begin());
+                    destination = destination.subspan(part.size());
+                }
+                SDL_UnmapGPUTransferBuffer(device_, upload);
+                auto *commands = SDL_AcquireGPUCommandBuffer(device_);
+                if (!commands)
+                {
+                    SDL_ReleaseGPUTransferBuffer(device_, upload);
+                    return false;
+                }
+                auto *copy = SDL_BeginGPUCopyPass(commands);
+                for (Uint32 layer = 0; layer < texture.layer_count_or_depth;
+                     ++layer)
+                {
+                    const SDL_GPUTextureTransferInfo src{
+                        upload,
+                        layer * texture.width * texture.height * 4,
+                        0,
+                        0
+                    };
+                    const SDL_GPUTextureRegion dst{
+                        atlas_,         0, layer, 0, 0, 0, texture.width,
+                        texture.height, 1
+                    };
+                    SDL_UploadToGPUTexture(copy, &src, &dst, false);
+                }
+                SDL_GPUTransferBufferLocation src{ upload,
+                                                   static_cast<Uint32>(
+                                                       texels.size()) };
+                SDL_GPUBufferRegion dst{ worldVbo_,
+                                         0,
+                                         static_cast<Uint32>(vertices.size()) };
+                SDL_UploadToGPUBuffer(copy, &src, &dst, false);
+                src.offset += dst.size;
+                dst = { worldIbo_, 0, static_cast<Uint32>(indices.size()) };
+                SDL_UploadToGPUBuffer(copy, &src, &dst, false);
+                SDL_EndGPUCopyPass(copy);
+                SDL_GenerateMipmapsForGPUTexture(commands, atlas_);
+                const bool submitted = SDL_SubmitGPUCommandBuffer(commands);
+                SDL_ReleaseGPUTransferBuffer(device_, upload);
+                return submitted;
+            }
+
             static auto
             Submit(SDL_GPUCommandBuffer *commands)
                 -> tl::expected<void, std::string>
@@ -369,6 +611,11 @@ namespace TwentyThreeSeventeen::Rendering
                 return {};
             }
 
+            SDL_GPUGraphicsPipeline *worldPipeline_{}, *presentPipeline_{};
+            SDL_GPUBuffer *worldVbo_{}, *worldIbo_{};
+            SDL_GPUTexture *atlas_{};
+            SDL_GPUSampler *sampler_{}, *edgeSampler_{};
+            std::shared_ptr<const WorldMesh> cached_;
             SDL_Window *window_{};
             SDL_GPUDevice *device_{};
             SDL_GPUTexture *depth_{};
@@ -385,11 +632,12 @@ namespace TwentyThreeSeventeen::Rendering
     } // namespace
 
     auto
-    Vulkan(WindowSize size, bool sync)
+    Vulkan(WindowSize size, bool sync, bool requireHardware)
         -> tl::expected<std::unique_ptr<Renderer>, std::string>
     {
         auto renderer = std::make_unique<VulkanRenderer>();
-        if (const auto initialized = renderer->Initialize(size, sync);
+        if (const auto initialized
+            = renderer->Initialize(size, sync, requireHardware);
             !initialized)
             return tl::unexpected(initialized.error());
         return std::unique_ptr<Renderer>(std::move(renderer));

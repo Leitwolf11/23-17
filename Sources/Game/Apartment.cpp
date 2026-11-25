@@ -29,200 +29,6 @@ namespace TwentyThreeSeventeen::Game
             { { 0, 2, 4, 2, 6, 4 } },
             { { 1, 5, 3, 3, 5, 7 } },
         } };
-        constexpr std::array<float, 6> kLight{
-            { 0.76f, 0.90f, 0.58f, 1.00f, 0.69f, 0.84f }
-        };
-        constexpr std::array kNormals{
-            Position{ 0, 0, -1 }, Position{ 0, 0, 1 },  Position{ 0, -1, 0 },
-            Position{ 0, 1, 0 },  Position{ -1, 0, 0 }, Position{ 1, 0, 0 }
-        };
-
-        auto
-        SegmentHits(Position from,
-                    Position direction,
-                    const Physics::Obstacle &obstacle) noexcept -> bool
-        {
-            const auto clip = [](float start,
-                                 float delta,
-                                 float center,
-                                 float half,
-                                 float &near,
-                                 float &far) {
-                if (std::abs(delta) < 0.0001f)
-                    return std::abs(start - center) < half;
-                const auto a = (center - half - start) / delta;
-                const auto b = (center + half - start) / delta;
-                near = std::max(near, std::min(a, b));
-                far = std::min(far, std::max(a, b));
-                return near < far;
-            };
-            float near = 0.01f;
-            float far = 0.96f;
-            return clip(from.x,
-                        direction.x,
-                        obstacle.center.x,
-                        obstacle.halfSize.x,
-                        near,
-                        far)
-                   && clip(from.y,
-                           direction.y,
-                           obstacle.center.y,
-                           obstacle.halfSize.y,
-                           near,
-                           far)
-                   && clip(from.z,
-                           direction.z,
-                           obstacle.center.z,
-                           obstacle.halfSize.z,
-                           near,
-                           far);
-        }
-
-        auto
-        BakeSurfaces(Apartment &scene) -> void
-        {
-            constexpr std::array order{ 0u, 1u, 2u, 1u, 3u, 2u };
-            for (auto &surface : scene.surfaces)
-            {
-                for (std::size_t face = 0; face < kNormals.size(); ++face)
-                {
-                    const auto normal = kNormals[face];
-                    const bool horizontal = face == 2 || face == 3;
-                    const auto halfU
-                        = face >= 4 ? surface.halfSize.z : surface.halfSize.x;
-                    const auto halfV
-                        = horizontal ? surface.halfSize.z : surface.halfSize.y;
-                    const auto count = [&](float half) {
-                        if (surface.exterior || surface.stairLamp
-                            || half <= 0.84f)
-                            return 1;
-                        return std::clamp(
-                            static_cast<int>(std::ceil(half * 2.0f / 0.91f)),
-                            1,
-                            16);
-                    };
-                    const int columns = count(halfU);
-                    const int rows = count(halfV);
-                    std::vector<SurfaceVertex> grid;
-                    grid.reserve(
-                        static_cast<std::size_t>((columns + 1) * (rows + 1)));
-                    for (int row = 0; row <= rows; ++row)
-                    {
-                        for (int column = 0; column <= columns; ++column)
-                        {
-                            const float u = (2.0f * static_cast<float>(column)
-                                                 / static_cast<float>(columns)
-                                             - 1.0f)
-                                            * halfU;
-                            const float v = (2.0f * static_cast<float>(row)
-                                                 / static_cast<float>(rows)
-                                             - 1.0f)
-                                            * halfV;
-                            const Position point{
-                                surface.center.x
-                                    + (face >= 4 ? normal.x * surface.halfSize.x
-                                                 : u),
-                                surface.center.y
-                                    + (horizontal
-                                           ? normal.y * surface.halfSize.y
-                                           : v),
-                                surface.center.z
-                                    + (face >= 4 ? u
-                                       : horizontal
-                                           ? v
-                                           : normal.z * surface.halfSize.z)
-                            };
-                            SurfaceVertex vertex{ point,
-                                                  face >= 4 ? point.z : point.x,
-                                                  horizontal ? point.z
-                                                             : point.y,
-                                                  kLight[face],
-                                                  {} };
-                            if (!surface.exterior && !surface.stairLamp)
-                            {
-                                const Position sample{
-                                    point.x + normal.x * 0.027f,
-                                    point.y + normal.y * 0.027f,
-                                    point.z + normal.z * 0.027f
-                                };
-                                for (std::size_t lamp = 0;
-                                     lamp < scene.lights.size();
-                                     ++lamp)
-                                {
-                                    const Position direction{
-                                        scene.lights[lamp].x - sample.x,
-                                        scene.lights[lamp].y - sample.y,
-                                        scene.lights[lamp].z - sample.z
-                                    };
-                                    const float squared
-                                        = std::max(0.01f,
-                                                   Dot(direction, direction));
-                                    const float incidence
-                                        = std::max(0.0f,
-                                                   Dot(direction, normal)
-                                                       / std::sqrt(squared));
-                                    if (incidence < 0.015f)
-                                        continue;
-                                    const bool blocked = std::ranges::any_of(
-                                        scene.obstacles,
-                                        [&](const auto &obstacle) {
-                                            return obstacle.subject == 0
-                                                   && SegmentHits(sample,
-                                                                  direction,
-                                                                  obstacle);
-                                        });
-                                    vertex.direct[lamp]
-                                        = incidence * (blocked ? 0.16f : 1.0f)
-                                          / (0.73f + 0.38f * squared);
-                                }
-                            }
-                            grid.push_back(vertex);
-                        }
-                    }
-                    for (int row = 0; row < rows; ++row)
-                    {
-                        for (int column = 0; column < columns; ++column)
-                        {
-                            const auto first = static_cast<std::size_t>(
-                                row * (columns + 1) + column);
-                            const auto stride
-                                = static_cast<std::size_t>(columns + 1);
-                            const std::array indices{ first,
-                                                      first + 1,
-                                                      first + stride,
-                                                      first + stride + 1 };
-                            for (const auto index : order)
-                                surface.faces[face].push_back(
-                                    grid[indices[index]]);
-                        }
-                    }
-                }
-            }
-        }
-
-        auto
-        OutsideView(const Surface &surface,
-                    Position eye,
-                    const Camera &camera,
-                    float aspect) noexcept -> bool
-        {
-            const Position offset{ surface.center.x - eye.x,
-                                   surface.center.y - eye.y,
-                                   surface.center.z - eye.z };
-            const auto radius = [&](Position normal) {
-                return std::abs(normal.x) * surface.halfSize.x
-                       + std::abs(normal.y) * surface.halfSize.y
-                       + std::abs(normal.z) * surface.halfSize.z;
-            };
-            const auto farthest
-                = Dot(offset, camera.forward) + radius(camera.forward);
-            return farthest <= 0.06f
-                   || std::abs(Dot(offset, camera.right)) - radius(camera.right)
-                          > farthest * aspect / 1.48f
-                   || std::abs(Dot(offset, camera.up)) - radius(camera.up)
-                          > farthest / 1.48f;
-        }
-
         struct Paint
         {
             Position color;
@@ -239,36 +45,6 @@ namespace TwentyThreeSeventeen::Game
                 , material{ basis }
             {}
         };
-
-        auto
-        AddWetGlint(Apartment &apartment,
-                    Position center,
-                    float length,
-                    float width,
-                    Position light,
-                    Position asphalt) -> void
-        {
-            constexpr int sectors = 10;
-            constexpr auto cycle = 2.0f * std::numbers::pi_v<float>;
-            const auto edge = [&](int index) {
-                const auto angle = static_cast<float>(index) * cycle
-                                   / static_cast<float>(sectors);
-                const auto irregularity
-                    = 0.86f + 0.14f * std::sin(angle * 4.0f + center.z);
-                return Position{
-                    center.x + std::sin(angle) * width * irregularity,
-                    center.y,
-                    center.z + std::cos(angle) * length * irregularity
-                };
-            };
-            for (int index = 0; index < sectors; ++index)
-            {
-                apartment.fixtures.push_back({ center, light });
-                apartment.fixtures.push_back({ edge(index), asphalt });
-                apartment.fixtures.push_back(
-                    { edge((index + 1) % sectors), asphalt });
-            }
-        }
 
         auto
         AddHandrail(Apartment &apartment) -> void
@@ -376,34 +152,6 @@ namespace TwentyThreeSeventeen::Game
             add({ -1.38f, 3.71f, 14.12f },
                 { 0.18f, 0.041f, 0.15f },
                 { 0.87f, 0.61f, 0.33f });
-            const Position reflectionEdge{ 0.035f, 0.045f, 0.055f };
-            for (int band = 0; band < 19; ++band)
-            {
-                const auto index = static_cast<float>(band);
-                const auto tone = 0.045f + 0.15f * (1.0f - index / 20.0f);
-                const auto offset = std::sin(index * 2.7f) * 0.23f;
-                AddWetGlint(apartment,
-                            { -1.38f + offset,
-                              -0.132f + index * 0.00018f,
-                              14.0f - index * 0.37f },
-                            0.28f + index * 0.011f,
-                            0.39f + index * 0.011f,
-                            { tone * 1.23f, tone * 0.89f, tone * 0.64f },
-                            reflectionEdge);
-            }
-            for (int patch = -4; patch <= 4; ++patch)
-            {
-                const auto index = static_cast<float>(patch);
-                AddWetGlint(apartment,
-                            { index * 1.31f + 0.2f,
-                              -0.136f,
-                              9.85f + std::sin(index * 6.7f) * 2.2f },
-                            0.55f,
-                            0.88f,
-                            { 0.062f, 0.083f, 0.102f },
-                            reflectionEdge);
-            }
-
             // Rain-darkened service alley, visible from the mid-stair window.
             add({ -5.9f, -0.19f, -2.5f }, { 3.9f, 0.12f, 7.3f }, asphalt);
             add({ -9.3f, 2.42f, -2.5f }, { 0.22f, 2.55f, 7.3f }, brick);
@@ -730,11 +478,8 @@ namespace TwentyThreeSeventeen::Game
     auto
     CreateScene(Investigation::CaseId id) -> Apartment
     {
-        auto scene = id == Investigation::CaseId::kApartment
-                         ? CreateApartment()
-                         : CreateInterior(id);
-        BakeSurfaces(scene);
-        return scene;
+        return id == Investigation::CaseId::kApartment ? CreateApartment()
+                                                       : CreateInterior(id);
     }
 
     auto
@@ -761,7 +506,6 @@ namespace TwentyThreeSeventeen::Game
                SceneQuality quality,
                std::vector<Rendering::Vertex> &vertices,
                float weatherSeconds,
-               float stairPower,
                float projection) -> void
     {
         vertices.clear();
@@ -783,114 +527,6 @@ namespace TwentyThreeSeventeen::Game
                                       0,
                                       0 };
         };
-        constexpr std::array tints{ Position{ 1.00f, 0.76f, 0.54f },
-                                    Position{ 0.74f, 0.88f, 1.00f },
-                                    Position{ 1.00f, 0.81f, 0.60f },
-                                    Position{ 0.65f, 0.92f, 0.88f } };
-        for (const auto &surface : apartment.surfaces)
-        {
-            if (surface.detail > quality.details
-                || OutsideView(surface, eye, camera, aspect))
-                continue;
-            const auto stairWeight
-                = surface.exterior
-                      ? 0.0f
-                      : std::clamp(1.0f
-                                       - std::abs(surface.center.z
-                                                  - apartment.eventDepth)
-                                             / 4.0f,
-                                   0.0f,
-                                   1.0f);
-            const auto ambientPower
-                = 1.0f - (1.0f - stairPower) * stairWeight * 0.62f;
-            const auto material = quality.details > 0
-                                      ? static_cast<float>(surface.material)
-                                      : 0.0f;
-            const Position relative{ eye.x - surface.center.x,
-                                     eye.y - surface.center.y,
-                                     eye.z - surface.center.z };
-            const bool inside = std::abs(relative.x) <= surface.halfSize.x
-                                && std::abs(relative.y) <= surface.halfSize.y
-                                && std::abs(relative.z) <= surface.halfSize.z;
-            for (std::size_t face = 0; face < kNormals.size(); ++face)
-            {
-                const auto normal = kNormals[face];
-                if (!inside
-                    && Dot(relative, normal)
-                           <= std::abs(Dot(surface.halfSize, normal)))
-                    continue;
-                for (const auto &point : surface.faces[face])
-                {
-                    Position light;
-                    if (surface.exterior || surface.stairLamp
-                        || quality.lighting == 0)
-                    {
-                        const auto level
-                            = point.ambient
-                              * (surface.stairLamp ? stairPower : ambientPower);
-                        light = { level, level, level };
-                    }
-                    else
-                    {
-                        const auto level = point.ambient * 0.58f * ambientPower;
-                        light = { level * 0.83f, level * 0.91f, level };
-                        for (int index = 0; index < quality.lighting; ++index)
-                        {
-                            const auto lamp = static_cast<std::size_t>(index);
-                            const auto amount
-                                = point.direct[lamp]
-                                  * (lamp == 1 ? stairPower : 1.0f);
-                            light.x += amount * tints[lamp].x;
-                            light.y += amount * tints[lamp].y;
-                            light.z += amount * tints[lamp].z;
-                        }
-                    }
-                    auto vertex = project(point.position);
-                    vertex.red = std::min(1.0f, surface.color.x * light.x);
-                    vertex.green = std::min(1.0f, surface.color.y * light.y);
-                    vertex.blue = std::min(1.0f, surface.color.z * light.z);
-                    vertex.textureU = point.textureU;
-                    vertex.textureV = point.textureV;
-                    vertex.material = material;
-                    vertices.push_back(vertex);
-                }
-            }
-        }
-
-        for (const auto &point : apartment.fixtures)
-        {
-            auto vertex = project(point.position);
-            vertex.red = point.color.x;
-            vertex.green = point.color.y;
-            vertex.blue = point.color.z;
-            vertices.push_back(vertex);
-        }
-
-        for (const auto &actor : apartment.actors)
-        {
-            const Position offset{ actor.center.x - eye.x,
-                                   actor.center.y - eye.y,
-                                   actor.center.z - eye.z };
-            if (Dot(offset, offset) > 121.0f
-                || Dot(offset, camera.forward) < -0.55f)
-                continue;
-            const auto drift
-                = std::sin(weatherSeconds * 1.20f + actor.center.x) * 0.008f;
-            for (const auto &point : actor.triangles)
-            {
-                auto position = point.position;
-                position.x += drift
-                              * std::clamp(position.y - actor.center.y + 0.35f,
-                                           0.0f,
-                                           1.0f);
-                auto vertex = project(position);
-                vertex.red = point.color.x;
-                vertex.green = point.color.y;
-                vertex.blue = point.color.z;
-                vertices.push_back(vertex);
-            }
-        }
-
         if (apartment.cinema && projection > 0.0f)
         {
             const auto exposure

@@ -1,0 +1,3 @@
+# Renderer reference objects
+
+[Marble Bust 01](https://polyhaven.com/a/marble_bust_01) and [Brass Vase 01](https://polyhaven.com/a/brass_vase_01) are CC0 scans from Poly Haven. The GLBs carry the original indexed positions, normals and UVs. The standalone reference scene uses the original 1K diffuse, OpenGL normal and ARM maps downsampled to 512 px. See the architectural material packing instructions and pass `--reference` to include these two maps in the reference atlas. The loader combines it with the architectural atlas. The reference assets are distributed under [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/).

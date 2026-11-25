@@ -8,3 +8,11 @@ cc_test(
     target_compatible_with = DESKTOP,
     deps = ["//Headers/Rendering:rendering", "@progmasoft_catch3//:catch3_main"],
 )
+
+cc_test(
+    name = "lighting_tests",
+    srcs = ["LightingTests.cpp"],
+    copts = COPTS,
+    target_compatible_with = DESKTOP,
+    deps = ["//Headers/Rendering:rendering", "//Sources/Rendering:lighting", "@progmasoft_catch3//:catch3_main"],
+)
