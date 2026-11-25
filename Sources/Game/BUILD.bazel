@@ -1,0 +1,58 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
+load("//Build:Cpp.bzl", "COPTS", "DESKTOP")
+
+cc_binary(
+    name = "23.17",
+    srcs = [
+        "Apartment.cpp",
+        "CaseAudio.cpp",
+        "CasePanel.cpp",
+        "CaseProps.cpp",
+        "CaseScenes.cpp",
+        "Dialog.cpp",
+        "DialogFont.inc",
+        "Main.cpp",
+        "SettingsMenu.cpp",
+        "WitnessModel.cpp",
+    ],
+    data = [
+        "//Assets/Geometry:case_props",
+        "//LegacyDemo/assets/audio:investigation_audio",
+    ],
+    copts = COPTS,
+    target_compatible_with = DESKTOP,
+    deps = [
+        "//Headers/Game:apartment",
+        "//Headers/Game:case_audio",
+        "//Headers/Game:case_panel",
+        "//Headers/Game:case_props",
+        "//Headers/Game:dialog",
+        "//Headers/Game:settings",
+        "//Headers/Game:settings_menu",
+        "//Headers/Game:witness_model",
+        "//Headers/Investigation:investigation",
+        "//Headers/Physics:player",
+        "//Headers/Rendering:rendering",
+        ":gltf",
+        ":settings",
+        "//Sources/Investigation:investigation",
+        "//Sources/Physics:player",
+        "//Sources/Rendering:rendering",
+        "@rules_cc//cc/runfiles",
+        "@sdl3//:sdl3",
+    ],
+)
+
+cc_library(
+    name = "settings",
+    srcs = ["Settings.cpp"],
+    copts = COPTS,
+    visibility = ["//Tests/Game:__pkg__"],
+    deps = ["//Headers/Game:settings"],
+)
+
+cc_library(
+    name = "gltf",
+    srcs = ["GltfImplementation.c"],
+    deps = ["@cgltf"],
+)

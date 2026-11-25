@@ -1,0 +1,306 @@
+msgid ""
+msgstr "Language: de_DE\nContent-Type: text/plain; charset=UTF-8\n"
+
+msgid "CASE_TITLE"
+msgstr "23.17 — Ein Fall im Treppenhaus"
+
+msgid "BRIEF"
+msgstr "Istanbul. Alex wurde tot im Treppenhaus gefunden. Der Hausmeister behauptet, Alex um 23:17 Uhr gesehen zu haben. Prüfe die Unterlagen am Eingang, den Technikraum im Keller und die Treppenabsätze im dritten und vierten Stock."
+
+msgid "CONTROLS"
+msgstr "WASD oder Pfeiltasten zum Gehen. Maus zum Umsehen. E zum Interagieren. J öffnet das Notizbuch, R den Bericht und Esc das Pausenmenü."
+
+msgid "CONTROLS_SHORT"
+msgstr "WASD Gehen   ·   E Interagieren   ·   J Notizbuch   ·   R Bericht   ·   Esc Pause"
+
+msgid "START"
+msgstr "Ermittlung beginnen"
+
+msgid "OBJECTIVE_START"
+msgstr "Das Einsatzprotokoll liegt links, die Eingangskamera steht rechts."
+
+msgid "OBJECTIVE"
+msgstr "Untersuche den Keller und die oberen Stockwerke. Vergleiche deine Notizen."
+
+msgid "EVIDENCE_COUNT"
+msgstr "Beweise {0}/{1}"
+
+msgid "TALK"
+msgstr "Reden"
+
+msgid "DISPATCH_TITLE"
+msgstr "Einsatzprotokoll"
+
+msgid "DISPATCH_BODY"
+msgstr "23:14 Uhr – Die Elektrikerin meldete sich per Funk vom Eingang, nachdem sie geklingelt hatte. Die Uhr der Leitstelle ist mit dem Notrufnetz synchronisiert."
+
+msgid "CAMERA_TITLE"
+msgstr "Eingangskamera"
+
+msgid "CAMERA_BODY"
+msgstr "23:10 Uhr auf der Aufnahme – Die Elektrikerin klingelt am Eingang. 23:14 Uhr – Alex schließt die Eingangstür auf und kommt herein. Beide Zeiten stammen von der Kamerauhr."
+
+msgid "BREAKER_TITLE"
+msgstr "Sicherung des vierten Stocks"
+
+msgid "BREAKER_BODY"
+msgstr "Laut Fehlerprotokoll war das Flurlicht von 23:11 bis 23:22 Uhr ausgefallen. Das Treppenpodest hat kein Fenster und die Notleuchte war zur Reparatur abgeklemmt."
+
+msgid "WITNESS_TITLE"
+msgstr "Aussage des Hausmeisters"
+
+msgid "WITNESS_BODY"
+msgstr "„Ich war im vierten Stock. Um 23:17 Uhr habe ich Alex dort gesehen. Ich bin sicher, dass er es war.“"
+
+msgid "WITNESS_NEEDS_EVIDENCE"
+msgstr "Vergleiche diese Aussage im Notizbuch mit dem Beleuchtungsprotokoll des vierten Stocks."
+
+msgid "WITNESS_CLARIFICATION"
+msgstr "„Na gut. Ich habe nur Schritte gehört und dachte, es sei Alex. Gesehen habe ich niemanden.“"
+
+msgid "CHALLENGE"
+msgstr "Das Sicherungsprotokoll zeigen"
+
+msgid "ADDED"
+msgstr "Im Notizbuch festgehalten."
+
+msgid "BACK_TO_CASE"
+msgstr "Zurück zur Ermittlung"
+
+msgid "NOTEBOOK"
+msgstr "Fallnotizbuch"
+
+msgid "NOTEBOOK_EMPTY"
+msgstr "Untersuche einen Gegenstand oder befrage einen Zeugen, um eine Notiz hinzuzufügen."
+
+msgid "REPORT"
+msgstr "Fallbericht"
+
+msgid "REPORT_INTRO"
+msgstr "Wähle die Ergebnisse, die du mit deinen Notizen belegen kannst."
+
+msgid "ARRIVAL"
+msgstr "Wann betrat Alex das Gebäude?"
+
+msgid "IDENTITY"
+msgstr "Was belegt die Aussage des Hausmeisters?"
+
+msgid "IDENTITY_CERTAIN"
+msgstr "Der Hausmeister sah Alex um 23:17 Uhr"
+
+msgid "IDENTITY_UNCERTAIN"
+msgstr "Es waren Schritte zu hören, die Person wurde nicht erkannt"
+
+msgid "IDENTITY_NOBODY"
+msgstr "Um 23:17 Uhr war niemand im vierten Stock"
+
+msgid "CONCLUSION"
+msgstr "Was folgerst du aus den Hinweisen zum Tod?"
+
+msgid "CONCLUSION_ACCIDENT"
+msgstr "Der Sturz war ein Unfall"
+
+msgid "CONCLUSION_HOMICIDE"
+msgstr "Jemand hat den Sturz verursacht"
+
+msgid "CONCLUSION_OPEN"
+msgstr "Die Ursache des Sturzes bleibt offen"
+
+msgid "SELECT"
+msgstr "Antwort wählen"
+
+msgid "SUBMIT"
+msgstr "Bericht abgeben"
+
+msgid "SUPPORTED_TITLE"
+msgstr "Belegter Bericht"
+
+msgid "SUPPORTED_BODY"
+msgstr "Du hast Alex’ Ankunftszeit ermittelt, den Weg der Elektrikerin belegt und die Klarstellung des Hausmeisters festgehalten. Die Ursache des Sturzes bleibt offen."
+
+msgid "INCOMPLETE_TITLE"
+msgstr "Unvollständiger Bericht"
+
+msgid "INCOMPLETE_BODY"
+msgstr "Deine Schlüsse passen zur bisherigen Chronologie. Sammle alle vier Unterlagen, befrage beide Zeugen, vergleiche alle drei Quellenpaare und halte die Klarstellung des Hausmeisters fest."
+
+msgid "UNSUPPORTED_TITLE"
+msgstr "Unbelegter Bericht"
+
+msgid "UNSUPPORTED_BODY"
+msgstr "Mindestens eine Schlussfolgerung geht über die Beweislage hinaus. Prüfe die Uhren, den Ausfall und den Unterschied zwischen einer Aussage und einer bestätigten Beobachtung."
+
+msgid "REVISE"
+msgstr "Bericht überarbeiten"
+
+msgid "RESTART"
+msgstr "Ermittlung neu starten"
+
+msgid "PAUSE"
+msgstr "Pause"
+
+msgid "SETTINGS"
+msgstr "Einstellungen"
+
+msgid "QUIT"
+msgstr "Spiel beenden"
+
+msgid "LANGUAGE"
+msgstr "Sprache"
+
+msgid "RESOLUTION"
+msgstr "Auflösung"
+
+msgid "QUALITY"
+msgstr "Grafikqualität"
+
+msgid "ANTIALIAS"
+msgstr "Multisample-Kantenglättung"
+
+msgid "DETAILS"
+msgstr "Umgebungsdetails"
+
+msgid "SHADOWS"
+msgstr "Dynamische Schatten"
+
+msgid "OFF"
+msgstr "Aus"
+
+msgid "ON"
+msgstr "Ein"
+
+msgid "BACK"
+msgstr "Zurück"
+
+msgid "OBJECTIVE_REPORT"
+msgstr "Lies deine Notizen und gib den Bericht ab."
+
+
+msgid "TIMELINE"
+msgstr "Zeitleiste"
+
+msgid "TIMELINE_HINT"
+msgstr "Ordne die Ereignisse vom frühesten bis zum spätesten. Zeiten und Quellen stehen im Notizbuch."
+
+msgid "EVENT_OUTAGE"
+msgstr "Licht im vierten Stock fällt aus"
+
+msgid "EVENT_WITNESSCLAIM"
+msgstr "Zeit der angeblichen Sichtung"
+
+msgid "EVENT_ARRIVAL"
+msgstr "Alex kommt herein · Kamerauhr"
+
+msgid "EVENT_POWERRESTORED"
+msgstr "Licht im vierten Stock geht wieder an"
+
+msgid "MOVE_UP"
+msgstr "Früher einordnen"
+
+msgid "MOVE_DOWN"
+msgstr "Später einordnen"
+
+msgid "DISPATCH_SOURCE"
+msgstr "Funkprotokoll der Leitstelle · synchronisierte Uhr · 23:14 Uhr"
+
+msgid "CAMERA_SOURCE"
+msgstr "Eingangskamera · Kamerauhr · 23:10 und 23:14 Uhr"
+
+msgid "BREAKER_SOURCE"
+msgstr "Störungsprotokoll des vierten Stocks · synchronisierte Gebäudeuhr · 23:11–23:22 Uhr"
+
+msgid "WITNESS_SOURCE"
+msgstr "Befragung des Hausmeisters · angebliche Sichtung um 23:17 Uhr"
+
+msgid "AMBIENT_VOLUME"
+msgstr "Umgebung"
+
+msgid "MUSIC_VOLUME"
+msgstr "Musik"
+
+msgid "EFFECTS_VOLUME"
+msgstr "Geräusche"
+
+msgid "CONTINUE"
+msgstr "Ermittlung fortsetzen"
+
+msgid "RESTART_CONFIRM"
+msgstr "Die Ermittlung neu beginnen und den aktuellen Fallfortschritt löschen?"
+
+msgid "RESTART_YES"
+msgstr "Fortschritt löschen und neu beginnen"
+
+msgid "CANCEL"
+msgstr "Abbrechen"
+
+msgid "SAVE_INVALID"
+msgstr "Der Fall konnte nicht geladen werden. Du kannst eine neue Ermittlung beginnen."
+
+msgid "SAVE_FAILED"
+msgstr "Der Fortschritt konnte nicht gespeichert werden. Versuche es erneut."
+
+msgid "SAVE_FAILED_HUD"
+msgstr "Automatisches Speichern fehlgeschlagen"
+
+msgid "ACCESSLOG_TITLE"
+msgstr "Zutrittsprotokoll"
+
+msgid "ACCESSLOG_SOURCE"
+msgstr "Kellerterminal · synchronisierte Gebäudeuhr · 23:16 Uhr"
+
+msgid "ACCESSLOG_BODY"
+msgstr "23:16 Uhr – Der Ausweis der Elektrikerin entriegelte die Wartungstür im dritten Stock. Der Eintrag enthält ihren Namen und die Kennung der Tür."
+
+msgid "ELECTRICIAN_TITLE"
+msgstr "Aussage der Elektrikerin"
+
+msgid "ELECTRICIAN_SOURCE"
+msgstr "Befragung der Elektrikerin · Treppenabsatz im dritten Stock"
+
+msgid "ELECTRICIAN_BODY"
+msgstr "„Ich habe im dritten Stock meinen Ausweis benutzt und bin Richtung vierter Stock gegangen. Das Licht war aus. Ich konnte nicht erkennen, ob noch jemand da war.“"
+
+msgid "DEDUCTIONS"
+msgstr "Bestätigte Quellenvergleiche"
+
+msgid "COMPARE"
+msgstr "Quellen vergleichen"
+
+msgid "COMPARE_NEED_SOURCES"
+msgstr "Sammle mindestens zwei Quellen für einen Vergleich."
+
+msgid "COMPARE_HINT"
+msgstr "Wähle zwei Quellen, die dasselbe Ereignis belegen oder eine Aussage überprüfen."
+
+msgid "SOURCE_ONE"
+msgstr "Erste Quelle"
+
+msgid "SOURCE_TWO"
+msgstr "Zweite Quelle"
+
+msgid "CHECK_COMPARISON"
+msgstr "Vergleich prüfen"
+
+msgid "COMPARE_NO_MATCH"
+msgstr "Diese Quellen klären zusammen keine offene Frage. Versuche es mit einem anderen Paar."
+
+msgid "MATCH_CAMERACLOCK"
+msgstr "Im Leitstellenprotokoll klingelte es um 23:14 Uhr, auf der Aufnahme um 23:10 Uhr. Die Kamerauhr ging vier Minuten nach. Alex kam um 23:18 Uhr herein."
+
+msgid "MATCH_DARKLANDING"
+msgstr "Der Treppenabsatz im vierten Stock war um 23:17 Uhr dunkel. Frage den Hausmeister, woran er Alex erkannt hat."
+
+msgid "MATCH_ELECTRICIANROUTE"
+msgstr "Das Zutrittsprotokoll belegt, dass die Elektrikerin um 23:16 Uhr im dritten Stock war. Ihre Aussage liefert eine andere Erklärung für die Schritte."
+
+msgid "TIMELINE_EMPTY"
+msgstr "Suche eine Quelle mit Zeitangabe, um ein Ereignis hinzuzufügen."
+
+msgid "EVENT_BELL"
+msgstr "Die Elektrikerin klingelt am Eingang"
+
+msgid "EVENT_SERVICEENTRY"
+msgstr "Die Elektrikerin benutzt ihren Ausweis im dritten Stock"
+
+msgid "EVENT_ARRIVAL_CORRECTED"
+msgstr "Alex kommt herein · korrigierte Uhrzeit"

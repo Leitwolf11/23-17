@@ -1,0 +1,8 @@
+---
+engines:
+  cppcheck:
+    language: c++
+exclude_paths:
+  - 'Sources/Rendering/SceneOpenGl.inc'
+  - 'Sources/Rendering/SceneSpirv.inc'
+  - 'LegacyDemo/assets/**'

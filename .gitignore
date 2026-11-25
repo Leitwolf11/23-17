@@ -1,0 +1,7 @@
+/LegacyDemo/.godot/
+/LegacyDemo/bin/
+/LegacyDemo/obj/
+/bazel-*
+
+/_doxygen/
+/coverage.lcov

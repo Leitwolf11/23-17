@@ -1,0 +1,11 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//Build:Cpp.bzl", "COPTS", "DESKTOP")
+
+cc_library(
+    name = "rendering",
+    srcs = ["OpenGlRenderer.cpp", "Renderer.cpp", "SceneOpenGl.inc", "SceneSpirv.inc", "VulkanRenderer.cpp"],
+    copts = COPTS,
+    target_compatible_with = DESKTOP,
+    visibility = ["//Sources/Game:__pkg__"],
+    deps = ["//Headers/Rendering:rendering", "@sdl3//:sdl3"],
+)

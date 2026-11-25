@@ -1,22 +1,54 @@
-# 23.17 — An Apartment Case
+# 23.17
 
-23.17 is a first-person, single-player 3D detective game set in Istanbul. On a rainy November night, a resident is found dead in a stairwell. A witness claims to have seen the resident at 23:17 on a floor where the power was out.
-
-Explore the apartment building, examine evidence and question witnesses. Cross-check clocks and statements in your notebook, reconstruct the timeline and use the evidence to support your final report.
+23.17 is a single-player, first-person 3D detective horror anthology. Examine original evidence, challenge testimony, reconstruct the timeline and file a supported report.
 
 ## Development status
 
-The game is in planning. The first playable prototype will cover the entrance and fourth-floor landing, with one witness, three pieces of evidence and a report decision.
+The native build opens three playable investigations. **The Apartment** follows a death on a rainy stairwell. **Night Shift** traces missing records through an archive. **The Last Screening** reconstructs a projectionist’s movements after closing. Each case has an independent save, original glTF props and a distinct environmental scare. The [narrative design](Docs/NarrativeDesign.md) documents the stories, art and playtime targets, and PEGI 16 content target.
 
-| Area | Target |
-| --- | --- |
-| Engine | Godot 4 .NET, C# and the Compatibility renderer |
-| Platforms | Windows and Linux desktop, with keyboard and mouse |
-| Resolutions | 960×540, 1280×720, 1920×1080 and 2560×1440 |
-| Graphics | Low, Medium, High, Xhigh, Max and Custom. First-launch defaults depend on hardware. |
-| Text languages | US English (`en-US`), German (`de-DE`) and French (`fr-FR`) |
+The C++20 engine targets Windows and Linux desktop. It ships US English, German and French in the native menus and case files. The [Godot Legacy Demo](LegacyDemo/README.md) is the earlier version of the Apartment investigation.
 
-The prototype's performance target is at least 50 FPS at 1280×720 on **High** on the reference Linux PC with an Intel Core i5-3210M and Intel HD Graphics 4000. During traversal, evidence inspection and dialogue, at least 99% of measured frames should take 20 ms or less.
+## Run the native build
+
+Use Bazelisk and Clang from the repository root. GCC and clang-cl are compatibility configurations.
+
+```sh
+bazelisk run //Sources/Game:23.17
+bazelisk test //Tests/...
+bazelisk run //Benches/Investigation:case_benchmark
+```
+
+Use **WASD** or the arrow keys to move, the **mouse** to look and **E** to interact. **J** opens the journal, where you can reread collected sources, choose records to compare, challenge testimony and order events. **R** opens the report. Case evidence, timeline edits and report drafts save automatically when you close a panel. The earlier native Apartment save is copied into the new case file when first opened. The pause menu lets you return to the case selector. In-game panels support mouse selection, arrow keys, Enter, numbered shortcuts and Esc. **Esc** opens the pause menu and **F1** goes directly to Settings. **Automatic** tries a hardware Vulkan device first and falls back to OpenGL 4.2 Core. You can select a specific API from the settings and the choice is saved separately from the legacy demo. Use `-- --graphics=opengl` or `-- --graphics=vulkan` after the Bazel target to override the startup preference for one run.
+
+From the start or pause menu, open **Settings** to change render resolution, borderless fullscreen, VSync, graphics quality, mouse sensitivity, vertical look, language, ambience volume, sudden-effect volume and sound captions. **Apply changes** saves the selected options. Borderless fullscreen uses the desktop size for presentation. The game renders at the selected resolution and fits the image to the available space.
+
+The following command checks all three physical investigation routes without opening a window.
+
+```sh
+bazelisk run //Sources/Game:23.17 -- --verify-campaign
+```
+
+The performance route walks both directions through a case and turns the camera while rendering at High with VSync off. It logs the selected render target and the presentation window size separately.
+
+```sh
+bazelisk run //Sources/Game:23.17 -- --case=archive --benchmark-seconds=60 --1280x720
+```
+
+Use `--case=apartment`, `--case=archive` or `--case=cinema` to open a specific case. Use `--1366x768` to measure the other reference resolution.
+
+Run `bazelisk test --config=gcc //Tests/...` for the GCC compatibility tests on Linux. On Windows, install LLVM and the Windows SDK and use `bazelisk test --config=clangcl //Tests/...`.
+
+For a desktop archive, first run `bazelisk build //Sources/Game:23.17`. Pass the resulting executable and an output ZIP to `python3 Build/PackageDesktop.py`. Use the `.exe` build output for Windows and pass any required redistributable runtime files with `--runtime`.
+
+Native C++ code follows the [Progmasoft Core C++ Coding Guidelines](https://github.com/Progmasoft/progmasoft-cpp). Bazel packages group implementation, headers, tests and benchmarks under `Sources`, `Headers`, `Tests` and `Benches`.
+
+If you still have the Godot `case.json`, you can import shared observations, the matching clock comparison and the original sighting challenge into a fresh Apartment save with `python3 Build/ImportLegacySave.py GODOT_CASE_JSON NATIVE_SAVE_DIRECTORY`. The Godot badge record and the native service-exit record describe different events. The old checkpoint, timeline and report draft are specific to the Godot case.
+
+## Continuous integration
+
+GitHub Actions builds the native game with Clang, runs Catch3 and checks all three investigation routes. A separate CodeQL workflow traces the Bazel build. Dependabot monitors Bazel, GitHub Actions and the legacy NuGet project. Coverage from the first-party unit tests is uploaded to Codecov and to Codacy on the default branch. Codacy Cloud analyzes the repository using its C++ configuration.
+
+Run `doxygen Doxyfile` to generate the API reference locally. Documentation warnings fail CI. The desktop prerelease workflow uses the commit-derived version and verifies the packaged archive before publication. See [Versioning](VERSIONING.md).
 
 ## Project information
 
@@ -28,6 +60,8 @@ The prototype's performance target is at least 50 FPS at 1280×720 on **High** o
 
 ## Licenses
 
-Project code uses the [MIT License](LICENSE). Game assets, including models, textures, music and sound effects, use [CC0 1.0 Universal](assets/LICENSE).
+Project code uses the [MIT License](LICENSE). Game assets, including generated mesh geometry, textures, music and sound effects, use [CC0 1.0 Universal](LegacyDemo/assets/LICENSE).
+
+The bundled [Canada 1500 typeface](https://typodermicfonts.com/canada1500/) by Raymond Larabie also uses CC0 1.0 Universal.
 
 Copyright (c) 2026 The 23.17 Computer Game's Contributors

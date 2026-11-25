@@ -1,0 +1,88 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and test
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: bazel-contrib/setup-bazel@104e3eea9447cdaa4b00d0fb46191a3985d26ab3 # 0.19.1
+        with:
+          bazelisk-cache: true
+          repository-cache: true
+          disk-cache: native-ci
+          cache-save: ${{ github.event_name != 'pull_request' }}
+      - name: Install Clang
+        run: sudo apt-get update && sudo apt-get install -y clang
+      - name: Build and run unit tests
+        run: bazelisk test //Tests/... //Sources/Game:23.17
+      - name: Verify the three investigation routes
+        run: bazel-bin/Sources/Game/23.17 --verify-campaign
+
+  documentation:
+    name: Doxygen
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Install Doxygen
+        run: sudo apt-get update && sudo apt-get install -y doxygen graphviz
+      - name: Build API documentation
+        run: doxygen Doxyfile
+
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      # OIDC permission for Codecov. GitHub issues the credential at runtime.
+      id-token: write # nosemgrep: codacy.yaml.security.hard-coded-tokens
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: bazel-contrib/setup-bazel@104e3eea9447cdaa4b00d0fb46191a3985d26ab3 # 0.19.1
+        with:
+          bazelisk-cache: true
+          repository-cache: true
+          disk-cache: native-coverage
+          cache-save: ${{ github.event_name != 'pull_request' }}
+      - name: Install matching Clang and LLVM coverage tools
+        run: sudo apt-get update && sudo apt-get install -y clang llvm libclang-rt-dev
+      - name: Generate first-party LCOV
+        id: report
+        run: |
+          bazelisk coverage --combined_report=lcov \
+            --experimental_use_llvm_covmap --experimental_generate_llvm_lcov \
+            --instrumentation_filter='^//Sources/,^//Headers/' \
+            --test_env=LLVM_COV="$(command -v llvm-cov)" \
+            --test_env=LLVM_PROFDATA="$(command -v llvm-profdata)" \
+            //Tests/...
+          report="$(bazelisk info output_path)/_coverage/_coverage_report.dat"
+          grep -q '^SF:Sources/' "$report"
+          cp "$report" coverage.lcov
+      - name: Upload to Codecov
+        if: github.actor != 'dependabot[bot]'
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7
+        with:
+          use_oidc: true
+          files: coverage.lcov
+          disable_search: true
+          fail_ci_if_error: true
+      - name: Upload to Codacy
+        if: ${{ !cancelled() && steps.report.outcome == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        uses: codacy/codacy-coverage-reporter-action@89d6c85cfafaec52c72b6c5e8b2878d33104c699 # v1
+        with:
+          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+          coverage-reports: coverage.lcov

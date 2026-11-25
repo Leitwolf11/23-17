@@ -1,0 +1,9 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+cc_library(
+    name = "investigation",
+    hdrs = ["Case.hpp"],
+    strip_include_prefix = "/Headers",
+    deps = ["@tl_expected//:expected"],
+    visibility = ["//visibility:public"],
+)
