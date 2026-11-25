@@ -273,11 +273,13 @@ namespace TwentyThreeSeventeen::Rendering
                                 &world->view,
                                 GL_STREAM_DRAW);
                     bindBufferBase_(GL_UNIFORM_BUFFER, 0, viewUbo_);
+                    enable_(GL_CULL_FACE);
                     useProgram_(worldProgram_);
                     drawElements_(GL_TRIANGLES,
                                   static_cast<GLsizei>(world->indexCount),
                                   GL_UNSIGNED_INT,
                                   nullptr);
+                    disable_(GL_CULL_FACE);
                 }
                 bindVertexArray_(overlayArray_);
                 bindBuffer_(GL_ARRAY_BUFFER, buffer_);

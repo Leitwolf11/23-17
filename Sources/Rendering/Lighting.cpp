@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include <algorithm>
 #include <cmath>
-#include <numbers>
 
 #include "Rendering/World.hpp"
 #include "Vector.hpp"
@@ -265,6 +264,18 @@ namespace TwentyThreeSeventeen::Rendering
     void
     BakeLighting(WorldMesh &mesh, const WorldView &lights)
     {
+        // Normalize imported and generated winding before submitting
+        // single-sided surfaces.
+        for (std::size_t i = 0; i + 2 < mesh.indices.size(); i += 3)
+        {
+            const auto &a = mesh.vertices[mesh.indices[i]],
+                       &b = mesh.vertices[mesh.indices[i + 1]],
+                       &c = mesh.vertices[mesh.indices[i + 2]];
+            const auto geometric = Cross(Sub(b.position, a.position),
+                                         Sub(c.position, a.position));
+            if (Dot(geometric, Add(Add(a.normal, b.normal), c.normal)) < 0)
+                std::swap(mesh.indices[i + 1], mesh.indices[i + 2]);
+        }
         const RayScene scene(mesh);
         constexpr std::array<Float3, 5> aperture{ { { 0, 0, 0 },
                                                     { -0.21f, 0, 0 },
@@ -309,8 +320,8 @@ namespace TwentyThreeSeventeen::Rendering
         }
         // The last array layer carries local incident radiance in a square-root
         // encoding.
-        constexpr int size = MaterialAtlas::kTileSize, width = 256,
-                      height = 128;
+        constexpr int size = MaterialAtlas::kTileSize, width = 192,
+                      height = 192;
         mesh.materials.probeCount = lights.probeHalfSize[3] > 1.5f ? 2 : 1;
         mesh.materials.rgba.resize(static_cast<std::size_t>(
             size * size * 4 * mesh.materials.LayerCount()));
@@ -322,17 +333,17 @@ namespace TwentyThreeSeventeen::Rendering
             for (int y = 0; y < height; ++y)
                 for (int x = 0; x < width; ++x)
                 {
-                    const auto latitude
-                        = ((static_cast<float>(y) + 0.5f) / height - 0.5f)
-                          * std::numbers::pi_v<float>;
-                    const auto longitude
-                        = ((static_cast<float>(x) + 0.5f) / width - 0.5f) * 2.0f
-                          * std::numbers::pi_v<float>;
-                    const Float3 direction{
-                        std::cos(latitude) * std::cos(longitude),
-                        std::sin(latitude),
-                        std::cos(latitude) * std::sin(longitude)
-                    };
+                    const float u
+                        = 2.0f * (static_cast<float>(x) + 0.5f) / width - 1.0f;
+                    const float v
+                        = 2.0f * (static_cast<float>(y) + 0.5f) / height - 1.0f;
+                    Float3 octant{ u, v, 1.0f - std::abs(u) - std::abs(v) };
+                    if (octant[2] < 0)
+                    {
+                        octant[0] = std::copysign(1.0f - std::abs(v), u);
+                        octant[1] = std::copysign(1.0f - std::abs(u), v);
+                    }
+                    const auto direction = Unit(octant);
                     Hit hit{ 60.0f };
                     capture[static_cast<std::size_t>(y * width + x)]
                         = scene.Trace(Xyz(probe == 0 ? lights.probeCenter

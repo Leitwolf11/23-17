@@ -161,7 +161,9 @@ void main()
         float travel=min(min(dist.x,dist.y),dist.z);
         if (all(lessThan(abs(probeOffset),probeExtent+vec3(0.02))))
             ray=normalize(probeOffset+ray*max(0.0,travel));
-        vec2 coord=vec2(atan(ray.z,ray.x)*0.15915494+0.5, asin(clamp(ray.y,-1.0,1.0))*0.31830989+0.5);
+        ray/=max(dot(abs(ray),vec3(1)),0.0001);
+        vec2 octant=ray.z<0.0 ? (1.0-abs(ray.yx))*mix(vec2(-1),vec2(1),greaterThanEqual(ray.xy,vec2(0))) : ray.xy;
+        vec2 coord=clamp(octant*0.5+0.5,vec2(0.001),vec2(0.999));
         vec3 radiance=textureLod(surfaces,vec3(coord,textureSize(surfaces,0).z-int(probeHalfSize.w)+(outside?1:0)),rough*rough*8.0).rgb;
         vec3 envFresnel=f0+(max(vec3(1.0-rough),f0)-f0)*pow(1.0-nv,5.0);
         linearColor+=4.0*radiance*radiance*envFresnel*mix(ao,1.0,0.25);

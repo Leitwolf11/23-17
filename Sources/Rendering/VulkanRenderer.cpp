@@ -405,6 +405,8 @@ namespace TwentyThreeSeventeen::Rendering
                             static_cast<Uint32>(attributes.size()) };
                 layout.primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
                 layout.rasterizer_state.enable_depth_clip = true;
+                if (uniforms > 0)
+                    layout.rasterizer_state.cull_mode = SDL_GPU_CULLMODE_BACK;
                 layout.depth_stencil_state.compare_op = SDL_GPU_COMPAREOP_LESS;
                 layout.depth_stencil_state.enable_depth_test = stride > 0;
                 layout.depth_stencil_state.enable_depth_write = stride > 0;
