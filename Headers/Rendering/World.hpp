@@ -42,6 +42,19 @@ namespace TwentyThreeSeventeen::Rendering
         VertexAttribute{ 4, offsetof(WorldVertex, response) }
     };
 
+    // Both APIs consume a tightly packed set of float attributes.
+    static_assert([] {
+        std::size_t stride = 0;
+        for (const auto &attribute : kWorldAttributes)
+        {
+            if (attribute.offset != stride || attribute.components < 1
+                || attribute.components > 4)
+                return false;
+            stride += attribute.components * sizeof(float);
+        }
+        return stride == sizeof(WorldVertex);
+    }());
+
     struct MaterialAtlas
     {
         static constexpr int kTileSize = 512;
