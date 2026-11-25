@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-#include <catch2/catch_test_macros.hpp>
+#include <Progmasoft/Catch3/TestMacros.hpp>
 
 #include "Rendering/Renderer.hpp"
 

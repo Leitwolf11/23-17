@@ -37,7 +37,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Install Doxygen
-        run: sudo apt-get update && sudo apt-get install -y doxygen
+        run: sudo apt-get update && sudo apt-get install -y doxygen graphviz
       - name: Build API documentation
         run: doxygen Doxyfile
 
