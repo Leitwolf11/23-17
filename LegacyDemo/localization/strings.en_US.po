@@ -1,0 +1,306 @@
+msgid ""
+msgstr "Language: en_US\nContent-Type: text/plain; charset=UTF-8\n"
+
+msgid "CASE_TITLE"
+msgstr "23.17 — An Apartment Case"
+
+msgid "BRIEF"
+msgstr "Istanbul. Alex was found dead in the stairwell. The caretaker claims he saw Alex at 23:17. Check the entrance records, the basement service room and the third- and fourth-floor landings."
+
+msgid "CONTROLS"
+msgstr "WASD or arrow keys to walk. Mouse to look. E to interact. J opens the notebook, R opens the report, and Esc opens the pause menu."
+
+msgid "CONTROLS_SHORT"
+msgstr "WASD Move   ·   E Interact   ·   J Notebook   ·   R Report   ·   Esc Pause"
+
+msgid "START"
+msgstr "Begin investigation"
+
+msgid "OBJECTIVE_START"
+msgstr "Look left for the dispatch log and right for the entrance camera."
+
+msgid "OBJECTIVE"
+msgstr "Check the basement and upper floors. Compare your notes."
+
+msgid "EVIDENCE_COUNT"
+msgstr "Evidence {0}/{1}"
+
+msgid "TALK"
+msgstr "Speak"
+
+msgid "DISPATCH_TITLE"
+msgstr "Dispatch log"
+
+msgid "DISPATCH_BODY"
+msgstr "23:14 — The electrician radioed from the entrance after ringing the lobby bell. The dispatch clock is synchronized with the emergency network."
+
+msgid "CAMERA_TITLE"
+msgstr "Entrance camera"
+
+msgid "CAMERA_BODY"
+msgstr "23:10 on the recording — The electrician rings the lobby bell. 23:14 — Alex unlocks the entrance and walks inside. Both timestamps come from the camera’s clock."
+
+msgid "BREAKER_TITLE"
+msgstr "Fourth-floor breaker"
+
+msgid "BREAKER_BODY"
+msgstr "The fault log records a loss of corridor lighting from 23:11 to 23:22. The landing has no window and the emergency fixture was disconnected for repair."
+
+msgid "WITNESS_TITLE"
+msgstr "Caretaker’s statement"
+
+msgid "WITNESS_BODY"
+msgstr "“I was on the fourth floor. I saw Alex there at 23:17. I’m sure it was him.”"
+
+msgid "WITNESS_NEEDS_EVIDENCE"
+msgstr "Compare this statement with the fourth-floor lighting record in your notebook."
+
+msgid "WITNESS_CLARIFICATION"
+msgstr "“All right. I only heard footsteps. I assumed it was Alex. I couldn’t see anyone.”"
+
+msgid "CHALLENGE"
+msgstr "Show the breaker log"
+
+msgid "ADDED"
+msgstr "Recorded in your notebook."
+
+msgid "BACK_TO_CASE"
+msgstr "Return to the investigation"
+
+msgid "NOTEBOOK"
+msgstr "Case notebook"
+
+msgid "NOTEBOOK_EMPTY"
+msgstr "Inspect an object or interview a witness to add a note."
+
+msgid "REPORT"
+msgstr "Case report"
+
+msgid "REPORT_INTRO"
+msgstr "Choose the findings you can support with your notes."
+
+msgid "ARRIVAL"
+msgstr "When did Alex enter the building?"
+
+msgid "IDENTITY"
+msgstr "What does the caretaker’s statement establish?"
+
+msgid "IDENTITY_CERTAIN"
+msgstr "The caretaker saw Alex at 23:17"
+
+msgid "IDENTITY_UNCERTAIN"
+msgstr "Footsteps were heard but the person wasn’t identified"
+
+msgid "IDENTITY_NOBODY"
+msgstr "Nobody was on the fourth floor at 23:17"
+
+msgid "CONCLUSION"
+msgstr "What do you conclude about the death?"
+
+msgid "CONCLUSION_ACCIDENT"
+msgstr "The fall was an accident"
+
+msgid "CONCLUSION_HOMICIDE"
+msgstr "Someone caused the fall"
+
+msgid "CONCLUSION_OPEN"
+msgstr "Keep the cause of the fall open"
+
+msgid "SELECT"
+msgstr "Choose an answer"
+
+msgid "SUBMIT"
+msgstr "File report"
+
+msgid "SUPPORTED_TITLE"
+msgstr "Supported report"
+
+msgid "SUPPORTED_BODY"
+msgstr "You established Alex’s arrival time, corroborated the electrician’s route and recorded the caretaker’s clarification. The cause of the fall remains open."
+
+msgid "INCOMPLETE_TITLE"
+msgstr "Incomplete report"
+
+msgid "INCOMPLETE_BODY"
+msgstr "Your findings fit the timeline you have. Collect all four records, speak to both witnesses, compare all three pairs of sources and record the caretaker’s clarification."
+
+msgid "UNSUPPORTED_TITLE"
+msgstr "Unsupported report"
+
+msgid "UNSUPPORTED_BODY"
+msgstr "At least one finding goes beyond what the evidence establishes. Check the clocks, the outage, and the difference between a statement and a confirmed observation."
+
+msgid "REVISE"
+msgstr "Revise report"
+
+msgid "RESTART"
+msgstr "Restart investigation"
+
+msgid "PAUSE"
+msgstr "Paused"
+
+msgid "SETTINGS"
+msgstr "Settings"
+
+msgid "QUIT"
+msgstr "Quit to desktop"
+
+msgid "LANGUAGE"
+msgstr "Language"
+
+msgid "RESOLUTION"
+msgstr "Resolution"
+
+msgid "QUALITY"
+msgstr "Graphics quality"
+
+msgid "ANTIALIAS"
+msgstr "Multisample antialiasing"
+
+msgid "DETAILS"
+msgstr "Environment details"
+
+msgid "SHADOWS"
+msgstr "Dynamic shadows"
+
+msgid "OFF"
+msgstr "Off"
+
+msgid "ON"
+msgstr "On"
+
+msgid "BACK"
+msgstr "Back"
+
+msgid "OBJECTIVE_REPORT"
+msgstr "Review your notes and file the report."
+
+
+msgid "TIMELINE"
+msgstr "Timeline"
+
+msgid "TIMELINE_HINT"
+msgstr "Put the events in order from earliest to latest. Check the notebook for times and sources."
+
+msgid "EVENT_OUTAGE"
+msgstr "Fourth-floor lights fail"
+
+msgid "EVENT_WITNESSCLAIM"
+msgstr "Time of the reported sighting"
+
+msgid "EVENT_ARRIVAL"
+msgstr "Alex enters · camera clock"
+
+msgid "EVENT_POWERRESTORED"
+msgstr "Fourth-floor lights return"
+
+msgid "MOVE_UP"
+msgstr "Move earlier"
+
+msgid "MOVE_DOWN"
+msgstr "Move later"
+
+msgid "DISPATCH_SOURCE"
+msgstr "Dispatch radio log · synchronized clock · 23:14"
+
+msgid "CAMERA_SOURCE"
+msgstr "Entrance CCTV · camera clock · 23:10 and 23:14"
+
+msgid "BREAKER_SOURCE"
+msgstr "Fourth-floor fault log · synchronized building clock · 23:11–23:22"
+
+msgid "WITNESS_SOURCE"
+msgstr "Caretaker interview · claimed sighting at 23:17"
+
+msgid "AMBIENT_VOLUME"
+msgstr "Ambience"
+
+msgid "MUSIC_VOLUME"
+msgstr "Music"
+
+msgid "EFFECTS_VOLUME"
+msgstr "Sound effects"
+
+msgid "CONTINUE"
+msgstr "Continue investigation"
+
+msgid "RESTART_CONFIRM"
+msgstr "Restart the investigation and erase the current case progress?"
+
+msgid "RESTART_YES"
+msgstr "Erase progress and restart"
+
+msgid "CANCEL"
+msgstr "Cancel"
+
+msgid "SAVE_INVALID"
+msgstr "The case save could not be loaded. You can begin a new investigation."
+
+msgid "SAVE_FAILED"
+msgstr "Progress could not be saved. Try again."
+
+msgid "SAVE_FAILED_HUD"
+msgstr "Autosave failed"
+
+msgid "ACCESSLOG_TITLE"
+msgstr "Service access log"
+
+msgid "ACCESSLOG_SOURCE"
+msgstr "Basement terminal · synchronized building clock · 23:16"
+
+msgid "ACCESSLOG_BODY"
+msgstr "23:16 — The electrician’s badge unlocked the third-floor service gate. The entry includes her name and the gate identifier."
+
+msgid "ELECTRICIAN_TITLE"
+msgstr "Electrician’s statement"
+
+msgid "ELECTRICIAN_SOURCE"
+msgstr "Electrician interview · third-floor landing"
+
+msgid "ELECTRICIAN_BODY"
+msgstr "“I used my badge on three and walked up toward the fourth floor. The lights were out. I couldn’t tell if anyone else was there.”"
+
+msgid "DEDUCTIONS"
+msgstr "Confirmed comparisons"
+
+msgid "COMPARE"
+msgstr "Compare sources"
+
+msgid "COMPARE_NEED_SOURCES"
+msgstr "Collect at least two sources to compare them."
+
+msgid "COMPARE_HINT"
+msgstr "Choose two sources that document the same event or test a statement."
+
+msgid "SOURCE_ONE"
+msgstr "First source"
+
+msgid "SOURCE_TWO"
+msgstr "Second source"
+
+msgid "CHECK_COMPARISON"
+msgstr "Check comparison"
+
+msgid "COMPARE_NO_MATCH"
+msgstr "These sources do not resolve a question together. Try another pair."
+
+msgid "MATCH_CAMERACLOCK"
+msgstr "The bell rang at 23:14 in the dispatch log and 23:10 on the video. The camera was four minutes slow. Alex entered at 23:18."
+
+msgid "MATCH_DARKLANDING"
+msgstr "The fourth-floor landing was dark at 23:17. Ask the caretaker how he identified Alex."
+
+msgid "MATCH_ELECTRICIANROUTE"
+msgstr "The badge log places the electrician on the third floor at 23:16. Her account offers another explanation for the footsteps."
+
+msgid "TIMELINE_EMPTY"
+msgstr "Find a dated source to add an event to the timeline."
+
+msgid "EVENT_BELL"
+msgstr "The electrician rings the lobby bell"
+
+msgid "EVENT_SERVICEENTRY"
+msgstr "The electrician uses her badge on the third floor"
+
+msgid "EVENT_ARRIVAL_CORRECTED"
+msgstr "Alex enters · corrected time"

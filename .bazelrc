@@ -1,0 +1,6 @@
+build --compilation_mode=opt
+build --enable_platform_specific_config
+build:linux --repo_env=CC=clang
+build:gcc --repo_env=CC=gcc
+build:windows --config=clangcl
+build:clangcl --extra_toolchains=@local_config_cc//:cc-toolchain-x64_windows-clang-cl,@local_config_cc//:cc-toolchain-arm64_windows-clang-cl

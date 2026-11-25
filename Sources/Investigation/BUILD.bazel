@@ -1,0 +1,10 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//Build:Cpp.bzl", "COPTS")
+
+cc_library(
+    name = "investigation",
+    srcs = ["Case.cpp"],
+    copts = COPTS,
+    visibility = ["//visibility:public"],
+    deps = ["//Headers/Investigation:investigation"],
+)

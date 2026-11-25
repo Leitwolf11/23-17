@@ -1,0 +1,60 @@
+// SPDX-License-Identifier: MIT
+#version 420 core
+layout(location = 0) in vec3 color;
+layout(location = 1) in vec2 texel;
+layout(location = 2) flat in int material;
+layout(location = 0) out vec4 outputColor;
+
+float hashCell(vec2 samplePoint)
+{
+    vec3 point = fract(vec3(samplePoint.x, samplePoint.y, samplePoint.x) * vec3(0.1031, 0.1173, 0.1378));
+    point += dot(point, point.yzx + 17.13);
+    return fract((point.x + point.y) * point.z);
+}
+
+float wornSurface(vec2 samplePoint)
+{
+    vec2 cell = floor(samplePoint);
+    vec2 edge = fract(samplePoint);
+    edge = edge * edge * (3.0 - 2.0 * edge);
+    float upper = mix(hashCell(cell), hashCell(cell + vec2(1.0, 0.0)), edge.x);
+    float lower = mix(hashCell(cell + vec2(0.0, 1.0)), hashCell(cell + vec2(1.0)), edge.x);
+    return mix(upper, lower, edge.y);
+}
+
+void main()
+{
+    float tone = 1.0;
+    if (material != 0)
+    {
+        float broad = wornSurface(texel * 3.1);
+        float footprint = max(length(dFdx(texel)), length(dFdy(texel)));
+        float fineWeight = 1.0 - smoothstep(0.008, 0.033, footprint);
+        if (material == 3)
+        {
+            float grain = wornSurface(texel * vec2(42.0, 2.2));
+            float bands = sin((texel.x + (broad - 0.5) * 0.048) * 158.0);
+            tone = 0.80 + 0.19 * broad + fineWeight * (0.18 * grain + 0.045 * bands);
+        }
+        else
+        {
+            float fine = hashCell(floor(texel * 92.0));
+            if (material == 1)
+            {
+                float streak = wornSurface(texel * vec2(14.0, 0.52));
+                float damp = smoothstep(0.39, 0.84, broad * 0.55 + streak * 0.45);
+                tone = 0.91 + 0.18 * broad - 0.27 * damp + (fine - 0.5) * fineWeight * 0.042;
+            }
+            else if (material == 2)
+            {
+                float chips = smoothstep(0.65, 0.94, fine) - 0.7 * (1.0 - smoothstep(0.06, 0.24, fine));
+                tone = 0.81 + 0.25 * broad + fineWeight * chips * 0.22;
+            }
+            else if (material == 4)
+                tone = 0.69 + 0.42 * broad + (fine - 0.5) * fineWeight * 0.10;
+            else
+                tone = 0.89 + 0.15 * broad + (fine - 0.5) * fineWeight * 0.04;
+        }
+    }
+    outputColor = vec4(color * tone, 1.0);
+}

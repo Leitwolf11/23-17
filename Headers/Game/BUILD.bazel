@@ -1,0 +1,66 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+cc_library(
+    name = "apartment",
+    hdrs = ["Apartment.hpp"],
+    strip_include_prefix = "/Headers",
+    visibility = ["//Sources/Game:__pkg__"],
+    deps = [":settings", "//Headers/Investigation:investigation", "//Headers/Physics:player", "//Headers/Rendering:rendering"],
+)
+
+cc_library(
+    name = "case_panel",
+    hdrs = ["CasePanel.hpp"],
+    strip_include_prefix = "/Headers",
+    visibility = ["//Sources/Game:__pkg__"],
+    deps = ["//Headers/Investigation:investigation"],
+)
+
+cc_library(
+    name = "dialog",
+    hdrs = ["Dialog.hpp"],
+    strip_include_prefix = "/Headers",
+    visibility = ["//Sources/Game:__pkg__"],
+    deps = ["//Headers/Rendering:rendering"],
+)
+
+cc_library(
+    name = "settings",
+    hdrs = ["Settings.hpp"],
+    strip_include_prefix = "/Headers",
+    visibility = ["//visibility:public"],
+    deps = [":case_panel", "//Headers/Rendering:rendering"],
+)
+
+cc_library(
+    name = "settings_menu",
+    hdrs = ["SettingsMenu.hpp"],
+    strip_include_prefix = "/Headers",
+    visibility = ["//Sources/Game:__pkg__"],
+    deps = [":settings"],
+)
+
+cc_library(
+    name = "witness_model",
+    hdrs = ["WitnessModel.hpp"],
+    strip_include_prefix = "/Headers",
+    visibility = ["//Sources/Game:__pkg__"],
+    deps = [":apartment"],
+)
+
+
+cc_library(
+    name = "case_audio",
+    hdrs = ["CaseAudio.hpp"],
+    strip_include_prefix = "/Headers",
+    visibility = ["//Sources/Game:__pkg__"],
+    deps = [":apartment", "@sdl3//:sdl3"],
+)
+
+cc_library(
+    name = "case_props",
+    hdrs = ["CaseProps.hpp"],
+    strip_include_prefix = "/Headers",
+    visibility = ["//Sources/Game:__pkg__"],
+    deps = [":apartment"],
+)

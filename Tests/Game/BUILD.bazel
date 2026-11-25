@@ -1,0 +1,15 @@
+load("@rules_cc//cc:defs.bzl", "cc_test")
+load("//Build:Cpp.bzl", "COPTS", "DESKTOP")
+
+cc_test(
+    name = "settings_tests",
+    srcs = ["SettingsTests.cpp"],
+    copts = COPTS,
+    target_compatible_with = DESKTOP,
+    deps = [
+        "//Headers/Game:settings",
+        "//Headers/Rendering:rendering",
+        "//Sources/Game:settings",
+        "@progmasoft_catch3//:catch3_main",
+    ],
+)

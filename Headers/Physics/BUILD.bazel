@@ -1,0 +1,8 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+cc_library(
+    name = "player",
+    hdrs = ["Player.hpp"],
+    strip_include_prefix = "/Headers",
+    visibility = ["//visibility:public"],
+)

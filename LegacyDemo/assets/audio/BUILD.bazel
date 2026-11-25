@@ -1,0 +1,13 @@
+filegroup(
+    name = "investigation_audio",
+    srcs = [
+        "case-score.wav",
+        "entrance-rain.wav",
+        "fluorescent-hum.wav",
+        "service-vent.wav",
+        "stone-step-1.wav",
+        "stone-step-2.wav",
+        "stone-step-3.wav",
+    ],
+    visibility = ["//Sources/Game:__pkg__"],
+)

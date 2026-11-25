@@ -1,0 +1,10 @@
+load("@rules_cc//cc:defs.bzl", "cc_test")
+load("//Build:Cpp.bzl", "COPTS", "DESKTOP")
+
+cc_test(
+    name = "case_tests",
+    srcs = ["CaseTests.cpp"],
+    copts = COPTS,
+    target_compatible_with = DESKTOP,
+    deps = ["//Headers/Investigation:investigation", "//Sources/Investigation:investigation", "@progmasoft_catch3//:catch3_main"],
+)

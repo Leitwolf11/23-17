@@ -1,0 +1,11 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//Build:Cpp.bzl", "COPTS", "DESKTOP")
+
+cc_library(
+    name = "player",
+    srcs = ["Player.cpp"],
+    copts = COPTS,
+    target_compatible_with = DESKTOP,
+    visibility = ["//Sources/Game:__pkg__"],
+    deps = ["//Headers/Physics:player", "@jolt"],
+)

@@ -1,0 +1,306 @@
+msgid ""
+msgstr "Language: fr_FR\nContent-Type: text/plain; charset=UTF-8\n"
+
+msgid "CASE_TITLE"
+msgstr "23.17 — Une affaire dans l’immeuble"
+
+msgid "BRIEF"
+msgstr "Istanbul. Alex a été retrouvé mort dans la cage d’escalier. Le gardien affirme avoir vu Alex à 23 h 17. Consulte les registres de l’entrée, le local technique au sous-sol et les paliers des troisième et quatrième étages."
+
+msgid "CONTROLS"
+msgstr "WASD ou flèches pour marcher. Souris pour regarder. E pour interagir, J pour ouvrir le carnet, R pour le rapport et Échap pour la pause."
+
+msgid "CONTROLS_SHORT"
+msgstr "WASD Marcher   ·   E Interagir   ·   J Carnet   ·   R Rapport   ·   Échap Pause"
+
+msgid "START"
+msgstr "Commencer l’enquête"
+
+msgid "OBJECTIVE_START"
+msgstr "Le journal d’intervention est à gauche et la caméra d’entrée à droite."
+
+msgid "OBJECTIVE"
+msgstr "Explore le sous-sol et les étages. Compare tes notes."
+
+msgid "EVIDENCE_COUNT"
+msgstr "Indices {0}/{1}"
+
+msgid "TALK"
+msgstr "Parler"
+
+msgid "DISPATCH_TITLE"
+msgstr "Journal d’intervention"
+
+msgid "DISPATCH_BODY"
+msgstr "23 h 14 — L’électricienne a appelé par radio depuis l’entrée après avoir actionné la sonnette du hall. L’horloge du poste de contrôle est synchronisée avec le réseau d’urgence."
+
+msgid "CAMERA_TITLE"
+msgstr "Caméra de l’entrée"
+
+msgid "CAMERA_BODY"
+msgstr "23 h 10 sur l’enregistrement — L’électricienne actionne la sonnette du hall. 23 h 14 — Alex déverrouille la porte d’entrée et entre. Les deux heures proviennent de l’horloge de la caméra."
+
+msgid "BREAKER_TITLE"
+msgstr "Disjoncteur du quatrième étage"
+
+msgid "BREAKER_BODY"
+msgstr "Le journal indique une panne de l’éclairage du couloir de 23 h 11 à 23 h 22. Le palier est sans fenêtre et le bloc de secours était débranché pour réparation."
+
+msgid "WITNESS_TITLE"
+msgstr "Déclaration du gardien"
+
+msgid "WITNESS_BODY"
+msgstr "« J’étais au quatrième étage. J’y ai vu Alex à 23 h 17. Je suis sûr que c’était lui. »"
+
+msgid "WITNESS_NEEDS_EVIDENCE"
+msgstr "Dans le carnet, compare cette déclaration au relevé d’éclairage du quatrième étage."
+
+msgid "WITNESS_CLARIFICATION"
+msgstr "« D’accord. Je n’ai entendu que des pas. J’ai supposé que c’était Alex. Je n’ai vu personne. »"
+
+msgid "CHALLENGE"
+msgstr "Montrer le journal des pannes"
+
+msgid "ADDED"
+msgstr "Ajouté au carnet."
+
+msgid "BACK_TO_CASE"
+msgstr "Reprendre l’enquête"
+
+msgid "NOTEBOOK"
+msgstr "Carnet d’enquête"
+
+msgid "NOTEBOOK_EMPTY"
+msgstr "Examine un objet ou interroge un témoin pour ajouter une note."
+
+msgid "REPORT"
+msgstr "Rapport d’enquête"
+
+msgid "REPORT_INTRO"
+msgstr "Choisis les conclusions que tes notes permettent d’étayer."
+
+msgid "ARRIVAL"
+msgstr "À quelle heure Alex est-il entré dans l’immeuble ?"
+
+msgid "IDENTITY"
+msgstr "Qu’établit la déclaration du gardien ?"
+
+msgid "IDENTITY_CERTAIN"
+msgstr "Le gardien a vu Alex à 23 h 17"
+
+msgid "IDENTITY_UNCERTAIN"
+msgstr "Des pas ont été entendus sans que la personne soit identifiée"
+
+msgid "IDENTITY_NOBODY"
+msgstr "Il n’y avait personne au quatrième étage à 23 h 17"
+
+msgid "CONCLUSION"
+msgstr "Que conclus-tu sur le décès ?"
+
+msgid "CONCLUSION_ACCIDENT"
+msgstr "La chute était accidentelle"
+
+msgid "CONCLUSION_HOMICIDE"
+msgstr "Quelqu’un a provoqué la chute"
+
+msgid "CONCLUSION_OPEN"
+msgstr "La cause de la chute reste indéterminée"
+
+msgid "SELECT"
+msgstr "Choisir une réponse"
+
+msgid "SUBMIT"
+msgstr "Remettre le rapport"
+
+msgid "SUPPORTED_TITLE"
+msgstr "Rapport étayé"
+
+msgid "SUPPORTED_BODY"
+msgstr "Tu as établi l’heure d’arrivée d’Alex, confirmé le trajet de l’électricienne et consigné la précision du gardien. La cause de la chute reste indéterminée."
+
+msgid "INCOMPLETE_TITLE"
+msgstr "Rapport incomplet"
+
+msgid "INCOMPLETE_BODY"
+msgstr "Tes conclusions concordent avec la chronologie actuelle. Rassemble les quatre relevés, interroge les deux témoins, compare les trois paires de sources et consigne la précision du gardien."
+
+msgid "UNSUPPORTED_TITLE"
+msgstr "Rapport non étayé"
+
+msgid "UNSUPPORTED_BODY"
+msgstr "Au moins une conclusion dépasse ce que les indices établissent. Vérifie les horloges, la panne et l’écart entre une déclaration et un fait confirmé."
+
+msgid "REVISE"
+msgstr "Réviser le rapport"
+
+msgid "RESTART"
+msgstr "Recommencer l’enquête"
+
+msgid "PAUSE"
+msgstr "Pause"
+
+msgid "SETTINGS"
+msgstr "Paramètres"
+
+msgid "QUIT"
+msgstr "Quitter le jeu"
+
+msgid "LANGUAGE"
+msgstr "Langue"
+
+msgid "RESOLUTION"
+msgstr "Résolution"
+
+msgid "QUALITY"
+msgstr "Qualité graphique"
+
+msgid "ANTIALIAS"
+msgstr "Anticrénelage multisample"
+
+msgid "DETAILS"
+msgstr "Détails du décor"
+
+msgid "SHADOWS"
+msgstr "Ombres dynamiques"
+
+msgid "OFF"
+msgstr "Désactivé"
+
+msgid "ON"
+msgstr "Activé"
+
+msgid "BACK"
+msgstr "Retour"
+
+msgid "OBJECTIVE_REPORT"
+msgstr "Relis tes notes et remets le rapport."
+
+
+msgid "TIMELINE"
+msgstr "Chronologie"
+
+msgid "TIMELINE_HINT"
+msgstr "Classe les événements du plus ancien au plus récent. Consulte les heures et leurs sources dans le carnet."
+
+msgid "EVENT_OUTAGE"
+msgstr "Panne au quatrième étage"
+
+msgid "EVENT_WITNESSCLAIM"
+msgstr "Heure indiquée par le gardien"
+
+msgid "EVENT_ARRIVAL"
+msgstr "Alex entre · horloge de la caméra"
+
+msgid "EVENT_POWERRESTORED"
+msgstr "Retour de la lumière au quatrième étage"
+
+msgid "MOVE_UP"
+msgstr "Avancer dans l’ordre"
+
+msgid "MOVE_DOWN"
+msgstr "Reculer dans l’ordre"
+
+msgid "DISPATCH_SOURCE"
+msgstr "Journal radio du centre d’intervention · horloge synchronisée · 23 h 14"
+
+msgid "CAMERA_SOURCE"
+msgstr "Vidéo de l’entrée · horloge de la caméra · 23 h 10 et 23 h 14"
+
+msgid "BREAKER_SOURCE"
+msgstr "Journal des pannes du quatrième étage · horloge synchronisée · 23 h 11 à 23 h 22"
+
+msgid "WITNESS_SOURCE"
+msgstr "Entretien avec le gardien · observation alléguée à 23 h 17"
+
+msgid "AMBIENT_VOLUME"
+msgstr "Ambiance"
+
+msgid "MUSIC_VOLUME"
+msgstr "Musique"
+
+msgid "EFFECTS_VOLUME"
+msgstr "Effets sonores"
+
+msgid "CONTINUE"
+msgstr "Reprendre l’enquête"
+
+msgid "RESTART_CONFIRM"
+msgstr "Recommencer l’enquête et effacer la progression du dossier ?"
+
+msgid "RESTART_YES"
+msgstr "Effacer et recommencer"
+
+msgid "CANCEL"
+msgstr "Annuler"
+
+msgid "SAVE_INVALID"
+msgstr "La sauvegarde du dossier est illisible. Tu peux commencer une nouvelle enquête."
+
+msgid "SAVE_FAILED"
+msgstr "La progression n’a pas pu être sauvegardée. Réessaie."
+
+msgid "SAVE_FAILED_HUD"
+msgstr "Échec de la sauvegarde automatique"
+
+msgid "ACCESSLOG_TITLE"
+msgstr "Registre des accès"
+
+msgid "ACCESSLOG_SOURCE"
+msgstr "Terminal du sous-sol · horloge synchronisée de l’immeuble · 23 h 16"
+
+msgid "ACCESSLOG_BODY"
+msgstr "23 h 16 — Le badge de l’électricienne a déverrouillé la porte de service du troisième étage. Le registre indique son nom et l’identifiant de la porte."
+
+msgid "ELECTRICIAN_TITLE"
+msgstr "Déclaration de l’électricienne"
+
+msgid "ELECTRICIAN_SOURCE"
+msgstr "Entretien avec l’électricienne · palier du troisième étage"
+
+msgid "ELECTRICIAN_BODY"
+msgstr "« J’ai utilisé mon badge au troisième pour monter vers le quatrième. Les lumières étaient éteintes. Impossible de dire si quelqu’un d’autre était là. »"
+
+msgid "DEDUCTIONS"
+msgstr "Recoupements confirmés"
+
+msgid "COMPARE"
+msgstr "Comparer les sources"
+
+msgid "COMPARE_NEED_SOURCES"
+msgstr "Rassemble au moins deux sources pour les comparer."
+
+msgid "COMPARE_HINT"
+msgstr "Choisis deux sources qui documentent le même événement ou permettent de vérifier une déclaration."
+
+msgid "SOURCE_ONE"
+msgstr "Première source"
+
+msgid "SOURCE_TWO"
+msgstr "Deuxième source"
+
+msgid "CHECK_COMPARISON"
+msgstr "Vérifier le rapprochement"
+
+msgid "COMPARE_NO_MATCH"
+msgstr "Ces sources ne permettent pas de trancher une question ensemble. Essaie une autre paire."
+
+msgid "MATCH_CAMERACLOCK"
+msgstr "La sonnette a retenti à 23 h 14 selon le poste de contrôle et à 23 h 10 sur la vidéo. La caméra retardait de quatre minutes. Alex est entré à 23 h 18."
+
+msgid "MATCH_DARKLANDING"
+msgstr "À 23 h 17, le palier du quatrième était plongé dans le noir. Demande au gardien comment il a reconnu Alex."
+
+msgid "MATCH_ELECTRICIANROUTE"
+msgstr "Le registre situe l’électricienne au troisième étage à 23 h 16. Son récit offre une autre explication aux bruits de pas."
+
+msgid "TIMELINE_EMPTY"
+msgstr "Trouve une source horodatée pour ajouter un événement à la chronologie."
+
+msgid "EVENT_BELL"
+msgstr "L’électricienne actionne la sonnette du hall"
+
+msgid "EVENT_SERVICEENTRY"
+msgstr "L’électricienne utilise son badge au troisième"
+
+msgid "EVENT_ARRIVAL_CORRECTED"
+msgstr "Alex entre · heure corrigée"
