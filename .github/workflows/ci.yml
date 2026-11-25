@@ -28,7 +28,7 @@ jobs:
         run: bazelisk test //Tests/... //Sources/Game:23.17 //Sources/Rendering:reference
       - name: Exercise OpenGL and Vulkan world rendering
         run: |
-          sudo apt-get update && sudo apt-get install -y xvfb xauth mesa-vulkan-drivers libegl-mesa0 libgl1-mesa-dri
+          sudo apt-get update && sudo apt-get install -y xvfb xauth libvulkan1 mesa-vulkan-drivers libegl1 libgl1 libegl-mesa0 libgl1-mesa-dri
           export SDL_VIDEO_DRIVER=x11 SDL_VIDEO_FORCE_EGL=1 LIBGL_ALWAYS_SOFTWARE=1
           xvfb-run -a bazel-bin/Sources/Rendering/reference --graphics=opengl --frames=3
           xvfb-run -a bazel-bin/Sources/Rendering/reference --graphics=vulkan --allow-software --frames=3

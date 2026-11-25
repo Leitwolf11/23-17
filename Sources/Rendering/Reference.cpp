@@ -44,8 +44,7 @@ namespace TwentyThreeSeventeen::Rendering
               Float3 normal,
               Float4 tangent,
               Float3 tint,
-              float tile,
-              float emission = 0)
+              float tile)
         {
             Patch(mesh, 18, 14, [&](float u, float v) {
                 Float3 p{};
@@ -62,7 +61,7 @@ namespace TwentyThreeSeventeen::Rendering
                                       v * length(height) * 0.5f,
                                       tile },
                                     {},
-                                    { 0.35f, emission, 0 } };
+                                    { 0.35f, 0, 0 } };
             });
         }
         void
