@@ -93,12 +93,13 @@ namespace TwentyThreeSeventeen::Game
                     const auto halfV
                         = horizontal ? surface.halfSize.z : surface.halfSize.y;
                     const auto count = [&](float half) {
-                        return surface.exterior || surface.stairLamp
-                                   ? 1
-                                   : std::clamp(static_cast<int>(std::ceil(
-                                                    half * 2.0f / 0.72f)),
-                                                1,
-                                                20);
+                        if (surface.exterior || surface.stairLamp
+                            || half <= 0.84f)
+                            return 1;
+                        return std::clamp(
+                            static_cast<int>(std::ceil(half * 2.0f / 0.91f)),
+                            1,
+                            16);
                     };
                     const int columns = count(halfU);
                     const int rows = count(halfV);

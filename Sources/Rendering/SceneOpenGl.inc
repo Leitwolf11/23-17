@@ -65,8 +65,8 @@ void main()
             float fine = hashCell(floor(texel * 92.0));
             if (material == 1)
             {
-                float streak = wornSurface(texel * vec2(14.0, 0.52));
-                float damp = smoothstep(0.39, 0.84, broad * 0.55 + streak * 0.45);
+                float runoff = 0.5 + 0.5 * sin(texel.x * 23.0 + 4.0 * broad);
+                float damp = smoothstep(0.43, 0.86, broad * 0.74 + runoff * 0.26);
                 tone = 0.91 + 0.18 * broad - 0.27 * damp + (fine - 0.5) * fineWeight * 0.042;
             }
             else if (material == 2)
