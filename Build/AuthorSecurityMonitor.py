@@ -38,7 +38,8 @@ GLYPHS = {
 
 def display_image(path):
     width, height = 384, 288
-    rgb, rng = bytearray(), random.Random(2317)
+    rgb = bytearray()
+    rng = random.Random(2317)  # nosec B311 - repeatable image grain
     for y in range(height):
         for x in range(width):
             u, v = x / width, y / height
@@ -80,7 +81,7 @@ def display_image(path):
 
 def case_maps(directory):
     size = 128
-    rng = random.Random(507)
+    rng = random.Random(507)  # nosec B311 - repeatable surface grain
     height = [rng.uniform(-1, 1) for _ in range(size * size)]
     color, normal, surface, occlusion = bytearray(), bytearray(), bytearray(), bytearray()
     for y in range(size):
