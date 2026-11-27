@@ -5,4 +5,5 @@ engines:
 exclude_paths:
   - 'Sources/Rendering/SceneOpenGl.inc'
   - 'Sources/Rendering/SceneSpirv.inc'
+  - 'Sources/Rendering/Metal/*.metal' # Generated from the reviewed GLSL stages.
   - 'LegacyDemo/assets/**'

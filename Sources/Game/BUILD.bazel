@@ -9,6 +9,7 @@ cc_binary(
         "CasePanel.cpp",
         "CaseProps.cpp",
         "CaseScenes.cpp",
+        "SceneMesh.cpp",
         "Dialog.cpp",
         "DialogFont.inc",
         "Main.cpp",
@@ -17,6 +18,7 @@ cc_binary(
     ],
     data = [
         "//Assets/Geometry:case_props",
+        "//Assets/Materials:surfaces.png",
         "//LegacyDemo/assets/audio:investigation_audio",
     ],
     copts = COPTS,
@@ -33,7 +35,7 @@ cc_binary(
         "//Headers/Investigation:investigation",
         "//Headers/Physics:player",
         "//Headers/Rendering:rendering",
-        ":gltf",
+        "//Sources/Rendering:gltf",
         ":settings",
         "//Sources/Investigation:investigation",
         "//Sources/Physics:player",
@@ -49,10 +51,4 @@ cc_library(
     copts = COPTS,
     visibility = ["//Tests/Game:__pkg__"],
     deps = ["//Headers/Game:settings"],
-)
-
-cc_library(
-    name = "gltf",
-    srcs = ["GltfImplementation.c"],
-    deps = ["@cgltf"],
 )

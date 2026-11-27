@@ -1,5 +1,10 @@
 // SPDX-License-Identifier: MIT
 // clang-format off: Jolt requires its umbrella header first.
+#if defined(__clang__) && defined(__aarch64__)
+// Jolt 5.3 passes a float literal to a double-precision NEON intrinsic.
+#    pragma clang diagnostic push
+#    pragma clang diagnostic ignored "-Wdouble-promotion"
+#endif
 #include <Jolt/Jolt.h>
 #include <Jolt/Core/Factory.h>
 #include <Jolt/Core/TempAllocator.h>
@@ -13,6 +18,9 @@
 #include <Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h>
 #include <Jolt/Physics/PhysicsSystem.h>
 #include <Jolt/RegisterTypes.h>
+#if defined(__clang__) && defined(__aarch64__)
+#    pragma clang diagnostic pop
+#endif
 
 #include "Physics/Player.hpp"
 // clang-format on

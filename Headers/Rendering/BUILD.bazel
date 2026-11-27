@@ -9,7 +9,7 @@ cc_library(
 
 cc_library(
     name = "rendering",
-    hdrs = ["Renderer.hpp"],
+    hdrs = ["Renderer.hpp", "World.hpp", "ScannedMesh.hpp", "MetalBridge.hpp"],
     strip_include_prefix = "/Headers",
     visibility = ["//visibility:public"],
     deps = [":backend", "@tl_expected//:expected"],

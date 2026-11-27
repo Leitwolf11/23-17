@@ -5,8 +5,10 @@
 #include <memory>
 #include <span>
 #include <string>
+#include <string_view>
 
 #include "Game/CaseProps.hpp"
+#include "Rendering/ScannedMesh.hpp"
 #include "rules_cc/cc/runfiles/runfiles.h"
 
 namespace TwentyThreeSeventeen::Game
@@ -127,6 +129,47 @@ namespace TwentyThreeSeventeen::Game
             return fixtures.size() > before;
         }
     } // namespace
+
+    auto
+    AddTexturedCaseProps(Rendering::WorldMesh &mesh,
+                         Investigation::CaseId id,
+                         const char *executable)
+        -> tl::expected<void, std::string>
+    {
+        if (id != Investigation::CaseId::kApartment)
+            return {};
+        const std::unique_ptr<Runfiles> files(Runfiles::Create(executable));
+        const auto load
+            = [&](std::string_view name,
+                  Rendering::Float3 origin,
+                  float heading) -> tl::expected<void, std::string> {
+            std::string path;
+            if (files)
+                path = files->Rlocation(std::string("_main/Assets/Geometry/")
+                                        + std::string(name));
+            if (path.empty() || !SDL_GetPathInfo(path.c_str(), nullptr))
+            {
+                const auto *base = SDL_GetBasePath();
+                if (base == nullptr)
+                    return tl::unexpected(std::string(SDL_GetError()));
+                path = std::string(base) + "geometry/" + std::string(name);
+            }
+            auto loaded = Rendering::AppendTexturedModel(mesh,
+                                                         path,
+                                                         origin,
+                                                         1.0f,
+                                                         heading);
+            if (!loaded)
+                return tl::unexpected(std::string(name) + ": "
+                                      + loaded.error());
+            return {};
+        };
+        if (auto loaded
+            = load("security-monitor.glb", { 1.5f, 0.885f, 2.18f }, -0.32f);
+            !loaded)
+            return loaded;
+        return load("apartment-joinery.glb", {}, 0.0f);
+    }
 
     auto
     AddCaseProps(Apartment &scene,

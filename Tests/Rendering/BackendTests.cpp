@@ -7,11 +7,14 @@ TEST_CASE("Renderer preferences define the startup order")
 {
     using namespace TwentyThreeSeventeen::Rendering;
     REQUIRE(StartupOrder(ParseBackend("auto"))
-            == std::array{ Backend::kVulkan, Backend::kOpenGl });
+            == std::array{ Backend::kVulkan, kNativeAlternative });
     REQUIRE(StartupOrder(ParseBackend("vulkan"))
-            == std::array{ Backend::kVulkan, Backend::kOpenGl });
-    REQUIRE(StartupOrder(ParseBackend("opengl"))
-            == std::array{ Backend::kOpenGl, Backend::kVulkan });
+            == std::array{ Backend::kVulkan, kNativeAlternative });
+    REQUIRE(StartupOrder(kNativeAlternative)
+            == std::array{ kNativeAlternative, Backend::kVulkan });
+    REQUIRE(ParseBackend("metal") == Backend::kMetal);
+    REQUIRE(Key(Backend::kMetal) == "metal");
+    REQUIRE(Name(Backend::kMetal) == "Metal 3");
     REQUIRE(ParseBackend("unknown") == Backend::kAuto);
     REQUIRE(ParseBackend(Key(Backend::kOpenGl)) == Backend::kOpenGl);
 }

@@ -36,5 +36,5 @@ jobs:
         run: |
           bazelisk --batch build --spawn_strategy=processwrapper-sandbox --nouse_action_cache \
             --noremote_accept_cached --noremote_upload_local_results --disk_cache= \
-            //Sources/Game:23.17
+            //Sources/Game:23.17 //Sources/Rendering:reference
       - uses: github/codeql-action/analyze@915412ff23e8b7659517e607487dbeae018f2934 # v4

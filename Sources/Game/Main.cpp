@@ -198,8 +198,8 @@ namespace TwentyThreeSeventeen::Game
                     const auto key = value.substr(11);
                     options.override = Rendering::ParseBackend(key);
                     if (key != Rendering::Key(options.override))
-                        return tl::unexpected(
-                            std::string("Expected auto, vulkan or opengl."));
+                        return tl::unexpected(std::string(
+                            "Expected auto, vulkan, metal or opengl."));
                     options.hasOverride = true;
                 }
                 else if (value.starts_with("--frames="))
@@ -763,6 +763,26 @@ namespace TwentyThreeSeventeen::Game
         {
             auto apartment = CreateScene(id);
             AddCaseProps(apartment, id, executable);
+            auto materials = Rendering::LoadMaterials(executable);
+            if (!materials)
+            {
+                SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                             "%s",
+                             materials.error().c_str());
+                return EXIT_FAILURE;
+            }
+            Rendering::WorldMesh initial;
+            initial.materials = std::move(*materials);
+            if (const auto loaded
+                = AddTexturedCaseProps(initial, id, executable);
+                !loaded)
+            {
+                SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                             "Could not load the case model: %s",
+                             loaded.error().c_str());
+                return EXIT_FAILURE;
+            }
+            const auto world = BuildWorld(apartment, std::move(initial));
             const auto casePath = CaseFile(path, id);
             auto investigation = LoadCase(casePath, id);
             std::error_code existenceError;
@@ -1013,7 +1033,6 @@ namespace TwentyThreeSeventeen::Game
                     vertices,
                     static_cast<float>(
                         std::chrono::duration<double>(now - started).count()),
-                    1.0f - 0.78f * dim,
                     apartment.cinema ? projected : 0.0f);
                 const auto caption = horror.Caption(settings.language);
                 if (settings.captions && !caption.empty())
@@ -1034,8 +1053,22 @@ namespace TwentyThreeSeventeen::Game
                         viewport.size.width,
                         viewport.size.height,
                         vertices);
-                if (auto rendered
-                    = graphics.renderer->Draw(vertices, renderSize);
+                const auto quality = Quality(settings);
+                Rendering::WorldFrame worldFrame{
+                    world,
+                    FrameView(apartment,
+                              eye,
+                              camera,
+                              static_cast<float>(renderSize.width)
+                                  / static_cast<float>(renderSize.height),
+                              quality,
+                              1.0f - 0.78f * dim),
+                    world->detailEnds[static_cast<std::size_t>(quality.details)]
+                };
+                worldFrame.view.probeCenter[3] = seconds;
+                if (auto rendered = graphics.renderer->Draw(vertices,
+                                                            renderSize,
+                                                            &worldFrame);
                     !rendered)
                 {
                     if (graphics.renderer->ActiveBackend() != Backend::kVulkan)
@@ -1047,9 +1080,10 @@ namespace TwentyThreeSeventeen::Game
                     }
                     SDL_Log("Vulkan frame failed: %s",
                             rendered.error().c_str());
-                    auto fallback = Rendering::Open(Backend::kOpenGl,
-                                                    DesiredSize(settings),
-                                                    settings.sync);
+                    auto fallback
+                        = Rendering::Open(Rendering::kNativeAlternative,
+                                          DesiredSize(settings),
+                                          settings.sync);
                     if (!fallback)
                     {
                         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
@@ -1171,7 +1205,7 @@ namespace TwentyThreeSeventeen::Game
             {
                 const auto original = graphics.renderer->ActiveBackend();
                 const auto other = original == Backend::kVulkan
-                                       ? Backend::kOpenGl
+                                       ? Rendering::kNativeAlternative
                                        : Backend::kVulkan;
                 auto alternative = settings;
                 alternative.backend = other;
