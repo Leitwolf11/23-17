@@ -38,6 +38,8 @@ TEST_CASE("Multiple Blender GLBs preserve the existing world material layers")
           });
     REQUIRE(emissive != world.vertices.end());
     CHECK(emissive->position[1] > 2.0f);
+    CHECK(emissive->tint[0] > 0.01f);
+    CHECK(emissive->tint[0] < 0.75f);
     const auto colorLayer
         = static_cast<std::size_t>(emissive->uvMaterial[2]) - 1;
     const auto first = world.materials.rgba.begin()

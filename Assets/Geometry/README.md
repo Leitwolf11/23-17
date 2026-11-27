@@ -14,6 +14,6 @@ The Apartment joinery includes the writing desk, security cabinet, clipboard, se
 blender -b --factory-startup --python-exit-code 1 --python Build/AuthorApartmentJoinery.py
 ```
 
-For static models that use the textured import path, export glTF 2.0 as a GLB with indexed triangles, normals and UV set 0. Embed color, metallic/roughness, normal and occlusion textures as PNG images. Use opaque, single-sided materials and repeat wrapping. Bake UV node transforms into UV set 0. An emissive material can share the base color image and UVs and use an emissive factor proportional to the base color factor. Add models before the world bakes its reflection probes and static lighting.
+For static models that use the textured import path, export glTF 2.0 as a GLB with indexed triangles, normals and UV set 0. Embed color, metallic/roughness, normal and occlusion textures as PNG images. Use opaque, single-sided materials and repeat wrapping. Bake UV node transforms into UV set 0. An emissive material can share the base color image and UVs and use an emissive factor proportional to the base color factor. Low uses a representative base color from the imported texture when detail sampling is disabled. Add models before the world bakes its reflection probes and static lighting.
 
 The other case props use vertex colors and can be regenerated with `python3 Build/AuthorCaseProps.py`.

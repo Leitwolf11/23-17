@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include <SDL3/SDL.h>
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstring>
 
@@ -13,6 +14,8 @@ namespace TwentyThreeSeventeen::Rendering
         using Surface
             = std::unique_ptr<SDL_Surface, decltype(&SDL_DestroySurface)>;
         constexpr int kSize = MaterialAtlas::kTileSize;
+        constexpr float kColorScale
+            = 3.4f; // Matches the world shader and bake.
 
         auto
         ReadTexture(const cgltf_texture_view &view)
@@ -77,18 +80,29 @@ namespace TwentyThreeSeventeen::Rendering
         }
 
         auto
-        Sample(const Surface &image, std::size_t x, std::size_t y) -> Float4
+        Texel(const Surface &image, std::size_t x, std::size_t y)
+            -> std::array<std::uint8_t, 4>
         {
             if (!image)
-                return { 1, 1, 1, 1 };
+                return { 255, 255, 255, 255 };
             const auto pixels
                 = static_cast<const std::uint8_t *>(image->pixels);
             const auto offset
                 = y * static_cast<std::size_t>(image->pitch) + x * 4;
-            return { pixels[offset] / 255.0f,
-                     pixels[offset + 1] / 255.0f,
-                     pixels[offset + 2] / 255.0f,
-                     pixels[offset + 3] / 255.0f };
+            return { pixels[offset],
+                     pixels[offset + 1],
+                     pixels[offset + 2],
+                     pixels[offset + 3] };
+        }
+
+        auto
+        Sample(const Surface &image, std::size_t x, std::size_t y) -> Float4
+        {
+            const auto texel = Texel(image, x, y);
+            return { texel[0] / 255.0f,
+                     texel[1] / 255.0f,
+                     texel[2] / 255.0f,
+                     texel[3] / 255.0f };
         }
 
         auto
@@ -97,6 +111,48 @@ namespace TwentyThreeSeventeen::Rendering
             return value <= 0.04045f
                        ? value / 12.92f
                        : std::pow((value + 0.055f) / 1.055f, 2.4f);
+        }
+
+        auto
+        LinearColor(const Surface &image, std::size_t x, std::size_t y)
+            -> Float3
+        {
+            static const auto lookup = [] {
+                std::array<float, 256> values{};
+                for (std::size_t i = 0; i < values.size(); ++i)
+                    values[i] = ToLinear(static_cast<float>(i) / 255.0f);
+                return values;
+            }();
+            const auto rgb = Texel(image, x, y);
+            return { lookup[rgb[0]], lookup[rgb[1]], lookup[rgb[2]] };
+        }
+
+        auto
+        TextureTint(const Surface &image) -> Float3
+        {
+            if (!image)
+                return { 1, 1, 1 };
+            Float3 total{}, brightest{};
+            for (std::size_t y = 0; y < kSize; ++y)
+                for (std::size_t x = 0; x < kSize; ++x)
+                {
+                    const auto rgb = LinearColor(image, x, y);
+                    for (std::size_t channel = 0; channel < rgb.size();
+                         ++channel)
+                    {
+                        total[channel] += rgb[channel];
+                        brightest[channel]
+                            = std::max(brightest[channel], rgb[channel]);
+                    }
+                }
+            // Low shades with the tint alone. Leave enough range in the packed
+            // texture to reconstruct every highlight when sampling is enabled.
+            for (std::size_t channel = 0; channel < total.size(); ++channel)
+                total[channel] = std::max(
+                    { total[channel] / static_cast<float>(kSize * kSize),
+                      brightest[channel] / kColorScale,
+                      0.0001f });
+            return total;
         }
 
         auto
@@ -180,9 +236,11 @@ namespace TwentyThreeSeventeen::Rendering
             return tl::unexpected(emission.error());
         GltfMaterialTile result;
         result.emission = *emission;
+        const auto textureTint = TextureTint(*base);
         for (std::size_t c = 0; c < 3; ++c)
             result.tint[c]
-                = std::sqrt(std::clamp(pbr.base_color_factor[c], 0.0f, 1.0f));
+                = std::sqrt(std::clamp(pbr.base_color_factor[c], 0.0f, 1.0f)
+                            * textureTint[c]);
         constexpr auto bytes = static_cast<std::size_t>(kSize) * kSize * 4;
         result.color.resize(bytes);
         result.surface.resize(bytes);
@@ -190,7 +248,7 @@ namespace TwentyThreeSeventeen::Rendering
             for (std::size_t x = 0; x < kSize; ++x)
             {
                 const auto index = (y * kSize + x) * 4;
-                const auto rgb = Sample(*base, x, y);
+                const auto rgb = LinearColor(*base, x, y);
                 const auto mr = Sample(*orm, x, y);
                 const auto occlusion = Sample(*ao, x, y)[0];
                 const auto n = *normal ? Sample(*normal, x, y)
@@ -202,13 +260,9 @@ namespace TwentyThreeSeventeen::Rendering
                                                          scaledNormal[1],
                                                          scaledNormal[2]),
                                               0.001f);
-                for (std::size_t c = 0; c < 3; ++c)
-                {
-                    // Both GPU paths decode atlas RGB as pow(encoded, 2) * 3.4.
-                    const float linear = ToLinear(rgb[c]);
-                    result.color[index + c]
-                        = Quantize(std::sqrt(linear / 3.4f));
-                }
+                for (std::size_t c = 0; c < rgb.size(); ++c)
+                    result.color[index + c] = Quantize(
+                        std::sqrt(rgb[c] / (kColorScale * textureTint[c])));
                 result.color[index + 3]
                     = Quantize(std::lerp(1.0f, occlusion, aoView.scale));
                 result.surface[index]
