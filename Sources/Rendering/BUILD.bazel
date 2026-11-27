@@ -5,11 +5,13 @@ load("//Build:Cpp.bzl", "COPTS", "DESKTOP")
 cc_library(
     name = "rendering",
     srcs = [
+        "GpuPipelines.cpp",
+        "GpuPipelines.hpp",
+        "GpuRenderer.cpp",
         "Renderer.cpp",
         "ScannedMesh.cpp",
         "SceneOpenGl.inc",
         "SceneSpirv.inc",
-        "GpuRenderer.cpp",
         "World.cpp",
     ] + select({
         "@platforms//os:macos": [":metal_library"],

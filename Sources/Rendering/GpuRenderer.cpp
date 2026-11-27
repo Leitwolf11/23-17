@@ -3,22 +3,13 @@
 #include <algorithm>
 #include <cstddef>
 
+#include "GpuPipelines.hpp"
 #include "Rendering/Renderer.hpp"
 
 namespace TwentyThreeSeventeen::Rendering
 {
     namespace
     {
-#include "SceneSpirv.inc"
-#if defined(__APPLE__)
-#    include "SceneMetallib.inc"
-#endif
-        struct Stage
-        {
-            std::span<const Uint8> spirv;
-            const char *metalEntry;
-        };
-
         constexpr Uint32 kVertexBufferSize = 6 * 1024 * 1024;
         constexpr auto kDepthFormat = SDL_GPU_TEXTUREFORMAT_D16_UNORM;
 
@@ -34,11 +25,11 @@ namespace TwentyThreeSeventeen::Rendering
                 {
                     SDL_WaitForGPUIdle(device_);
                     ReleaseWorld();
-                    if (worldPipeline_)
-                        SDL_ReleaseGPUGraphicsPipeline(device_, worldPipeline_);
-                    if (presentPipeline_)
-                        SDL_ReleaseGPUGraphicsPipeline(device_,
-                                                       presentPipeline_);
+                    for (auto *pipeline : { pipelines_.overlay,
+                                            pipelines_.world,
+                                            pipelines_.present })
+                        if (pipeline != nullptr)
+                            SDL_ReleaseGPUGraphicsPipeline(device_, pipeline);
                     if (sampler_)
                         SDL_ReleaseGPUSampler(device_, sampler_);
                     if (edgeSampler_)
@@ -47,8 +38,6 @@ namespace TwentyThreeSeventeen::Rendering
                         SDL_ReleaseGPUTexture(device_, colorTarget_);
                     if (depth_ != nullptr)
                         SDL_ReleaseGPUTexture(device_, depth_);
-                    if (pipeline_ != nullptr)
-                        SDL_ReleaseGPUGraphicsPipeline(device_, pipeline_);
                     if (upload_ != nullptr)
                         SDL_ReleaseGPUTransferBuffer(device_, upload_);
                     if (vertices_ != nullptr)
@@ -142,45 +131,12 @@ namespace TwentyThreeSeventeen::Rendering
 
                 colorFormat_
                     = SDL_GetGPUSwapchainTextureFormat(device_, window_);
-                constexpr SDL_GPUVertexAttribute overlayAttributes[]{
-                    { 0, 0, SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4, 0 },
-                    { 1,
-                      0,
-                      SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-                      offsetof(Vertex, red) }
-                };
-                std::array<SDL_GPUVertexAttribute, kWorldAttributes.size()>
-                    worldAttributes{};
-                for (Uint32 i = 0; i < worldAttributes.size(); ++i)
-                {
-                    const auto attribute = kWorldAttributes[i];
-                    worldAttributes[i]
-                        = { i,
-                            0,
-                            attribute.components == 4
-                                ? SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4
-                                : SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
-                            attribute.offset };
-                }
-                pipeline_ = Pipeline({ kVertSpirv, "SceneVert" },
-                                     { kFragSpirv, "SceneFrag" },
-                                     overlayAttributes,
-                                     sizeof(Vertex),
-                                     0,
-                                     0);
-                worldPipeline_ = Pipeline({ kWorldVertSpirv, "WorldVert" },
-                                          { kWorldFragSpirv, "WorldFrag" },
-                                          worldAttributes,
-                                          sizeof(WorldVertex),
-                                          1,
-                                          1);
-                presentPipeline_
-                    = Pipeline({ kPresentVertSpirv, "PresentVert" },
-                               { kPresentFragSpirv, "PresentFrag" },
-                               {},
-                               0,
-                               0,
-                               1);
+                pipelines_ = CreateGpuPipelines(device_,
+                                                backend_,
+                                                colorFormat_,
+                                                kDepthFormat);
+                if (!pipelines_)
+                    return tl::unexpected(std::string(SDL_GetError()));
                 SDL_GPUSamplerCreateInfo sampler{};
                 sampler.min_filter = SDL_GPU_FILTER_LINEAR;
                 sampler.mag_filter = SDL_GPU_FILTER_LINEAR;
@@ -192,8 +148,7 @@ namespace TwentyThreeSeventeen::Rendering
                 sampler.address_mode_v
                     = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
                 edgeSampler_ = SDL_CreateGPUSampler(device_, &sampler);
-                if (!pipeline_ || !worldPipeline_ || !presentPipeline_
-                    || !sampler_ || !edgeSampler_)
+                if (!sampler_ || !edgeSampler_)
                     return tl::unexpected(std::string(SDL_GetError()));
                 SDL_Log("%s renderer: %s",
                         Name(backend_).data(),
@@ -311,7 +266,7 @@ namespace TwentyThreeSeventeen::Rendering
                     = SDL_BeginGPURenderPass(commands, &color, 1, &depth);
                 if (world)
                 {
-                    SDL_BindGPUGraphicsPipeline(pass, worldPipeline_);
+                    SDL_BindGPUGraphicsPipeline(pass, pipelines_.world);
                     SDL_PushGPUVertexUniformData(commands,
                                                  0,
                                                  &world->view,
@@ -336,7 +291,7 @@ namespace TwentyThreeSeventeen::Rendering
                                                  0,
                                                  0);
                 }
-                SDL_BindGPUGraphicsPipeline(pass, pipeline_);
+                SDL_BindGPUGraphicsPipeline(pass, pipelines_.overlay);
                 const SDL_GPUBufferBinding binding{ vertices_, 0 };
                 SDL_BindGPUVertexBuffers(pass, 0, &binding, 1);
                 if (!frame.empty())
@@ -366,7 +321,7 @@ namespace TwentyThreeSeventeen::Rendering
                         1
                     };
                     SDL_SetGPUViewport(present, &viewport);
-                    SDL_BindGPUGraphicsPipeline(present, presentPipeline_);
+                    SDL_BindGPUGraphicsPipeline(present, pipelines_.present);
                     const SDL_GPUTextureSamplerBinding input{ colorTarget_,
                                                               edgeSampler_ };
                     SDL_BindGPUFragmentSamplers(present, 0, &input, 1);
@@ -377,77 +332,6 @@ namespace TwentyThreeSeventeen::Rendering
             }
 
         private:
-            auto
-            Pipeline(Stage vert,
-                     Stage frag,
-                     std::span<const SDL_GPUVertexAttribute> attributes,
-                     Uint32 stride,
-                     Uint32 uniforms,
-                     Uint32 samplers) -> SDL_GPUGraphicsPipeline *
-            {
-                const auto compile = [&](const Stage &stage,
-                                         SDL_GPUShaderStage kind,
-                                         Uint32 textures) {
-                    SDL_GPUShaderCreateInfo shader{};
-                    shader.code_size = stage.spirv.size();
-                    shader.code = stage.spirv.data();
-                    shader.entrypoint = "main";
-                    shader.format = SDL_GPU_SHADERFORMAT_SPIRV;
-#if defined(__APPLE__)
-                    if (backend_ == Backend::kMetal)
-                    {
-                        shader.code = kMetalLibrary;
-                        shader.code_size = sizeof(kMetalLibrary);
-                        shader.entrypoint = stage.metalEntry;
-                        shader.format = SDL_GPU_SHADERFORMAT_METALLIB;
-                    }
-#endif
-                    shader.stage = kind;
-                    shader.num_uniform_buffers = uniforms;
-                    shader.num_samplers = textures;
-                    return SDL_CreateGPUShader(device_, &shader);
-                };
-                auto *vertex = compile(vert, SDL_GPU_SHADERSTAGE_VERTEX, 0);
-                if (!vertex)
-                    return nullptr;
-                auto *fragment
-                    = compile(frag, SDL_GPU_SHADERSTAGE_FRAGMENT, samplers);
-                if (!fragment)
-                {
-                    SDL_ReleaseGPUShader(device_, vertex);
-                    return nullptr;
-                }
-                SDL_GPUVertexBufferDescription buffer{};
-                buffer.pitch = stride;
-                SDL_GPUColorTargetDescription color{};
-                color.format = colorFormat_;
-                SDL_GPUGraphicsPipelineCreateInfo layout{};
-                layout.vertex_shader = vertex;
-                layout.fragment_shader = fragment;
-                if (!attributes.empty())
-                    layout.vertex_input_state
-                        = { &buffer,
-                            1,
-                            attributes.data(),
-                            static_cast<Uint32>(attributes.size()) };
-                layout.primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
-                layout.rasterizer_state.enable_depth_clip = true;
-                if (uniforms > 0)
-                    layout.rasterizer_state.cull_mode = SDL_GPU_CULLMODE_BACK;
-                layout.depth_stencil_state.compare_op = SDL_GPU_COMPAREOP_LESS;
-                layout.depth_stencil_state.enable_depth_test = stride > 0;
-                layout.depth_stencil_state.enable_depth_write = stride > 0;
-                layout.target_info.color_target_descriptions = &color;
-                layout.target_info.num_color_targets = 1;
-                layout.target_info.depth_stencil_format = kDepthFormat;
-                layout.target_info.has_depth_stencil_target = stride > 0;
-                auto *pipeline
-                    = SDL_CreateGPUGraphicsPipeline(device_, &layout);
-                SDL_ReleaseGPUShader(device_, vertex);
-                SDL_ReleaseGPUShader(device_, fragment);
-                return pipeline;
-            }
-
             void
             ReleaseWorld()
             {
@@ -620,7 +504,7 @@ namespace TwentyThreeSeventeen::Rendering
             }
 
             Backend backend_;
-            SDL_GPUGraphicsPipeline *worldPipeline_{}, *presentPipeline_{};
+            GpuPipelines pipelines_{};
             SDL_GPUBuffer *worldVbo_{}, *worldIbo_{};
             SDL_GPUTexture *atlas_{};
             SDL_GPUSampler *sampler_{}, *edgeSampler_{};
@@ -633,7 +517,6 @@ namespace TwentyThreeSeventeen::Rendering
             WindowSize colorSize_{};
             SDL_GPUBuffer *vertices_{};
             SDL_GPUTransferBuffer *upload_{};
-            SDL_GPUGraphicsPipeline *pipeline_{};
             Uint32 depthWidth_{};
             Uint32 depthHeight_{};
             bool claimed_{};
