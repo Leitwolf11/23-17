@@ -3,7 +3,6 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
-#include <numbers>
 
 #include "Game/Apartment.hpp"
 #include "Game/WitnessModel.hpp"
@@ -45,50 +44,6 @@ namespace TwentyThreeSeventeen::Game
                 , material{ basis }
             {}
         };
-
-        auto
-        AddHandrail(Apartment &apartment) -> void
-        {
-            constexpr int ring = 12;
-            constexpr auto cycle = 2.0f * std::numbers::pi_v<float>;
-            const Position railTint{ 0.26f, 0.16f, 0.095f };
-            std::array<ActorPoint, ring> front;
-            std::array<ActorPoint, ring> back;
-            for (int index = 0; index < ring; ++index)
-            {
-                const auto angle = static_cast<float>(index) * cycle
-                                   / static_cast<float>(ring);
-                const auto across = std::cos(angle);
-                const auto up = std::sin(angle);
-                const Position offset{ across * 0.045f,
-                                       up * 0.043f,
-                                       up * 0.020f };
-                const auto light = 0.68f + 0.40f * std::max(0.0f, up)
-                                   + 0.10f * std::max(0.0f, across);
-                const Position color{ railTint.x * light,
-                                      railTint.y * light,
-                                      railTint.z * light };
-                front[static_cast<std::size_t>(index)] = {
-                    { 1.77f + offset.x, 1.03f + offset.y, -1.06f + offset.z },
-                    color
-                };
-                back[static_cast<std::size_t>(index)] = {
-                    { 1.77f + offset.x, 3.38f + offset.y, -6.34f + offset.z },
-                    color
-                };
-            }
-            for (std::size_t index = 0; index < front.size(); ++index)
-            {
-                const auto next = (index + 1) % front.size();
-                for (auto vertex : { front[index],
-                                     front[next],
-                                     back[index],
-                                     front[next],
-                                     back[next],
-                                     back[index] })
-                    apartment.fixtures.push_back(vertex);
-            }
-        }
 
         auto
         BuildExterior(Apartment &apartment) -> void
@@ -325,10 +280,6 @@ namespace TwentyThreeSeventeen::Game
             box({ 0, height + 0.005f, depth + 0.16f },
                 { 1.94f, 0.005f, 0.021f },
                 wood);
-            if (step % 3 == 0)
-                box({ 1.77f, height + 0.47f, depth },
-                    { 0.035f, 0.47f, 0.035f },
-                    steel);
         }
 
         for (float z = 0.0f; z < 5.0f; z += 0.64f)
@@ -340,8 +291,10 @@ namespace TwentyThreeSeventeen::Game
                 { 0.007f, 0.002f, 2.95f },
                 { 0.20f, 0.22f, 0.22f });
 
-        box({ -1.5f, 0.42f, 2.18f }, { 0.35f, 0.42f, 0.41f }, wood, true);
-        box({ -1.5f, 0.84f, 2.18f }, { 0.39f, 0.045f, 0.46f }, wood);
+        // Furniture in apartment-joinery.glb uses these Jolt footprints.
+        for (float side : { -1.0f, 1.0f })
+            apartment.obstacles.push_back(
+                { { side * 1.5f, 0.42f, 2.18f }, { 0.35f, 0.42f, 0.41f } });
         // Extra trim and fittings stay independent from the collision geometry.
         for (float side : { -1.0f, 1.0f })
         {
@@ -387,15 +340,10 @@ namespace TwentyThreeSeventeen::Game
         }
 
         const Position dispatch{ -1.5f, 0.925f, 2.20f };
-        box(dispatch, { 0.19f, 0.021f, 0.14f }, { 0.68f, 0.61f, 0.44f });
         apartment.obstacles.push_back(
             { dispatch,
               { 0.23f, 0.075f, 0.17f },
               static_cast<std::uint64_t>(Subject::kDispatch) });
-        for (int line = 0; line < 4; ++line)
-            box({ -1.5f, 0.948f, 2.13f + static_cast<float>(line) * 0.037f },
-                { 0.13f, 0.002f, 0.003f },
-                steel);
 
         const auto record = [&](Subject subject,
                                 Position center,
@@ -405,23 +353,15 @@ namespace TwentyThreeSeventeen::Game
             apartment.obstacles.push_back(
                 { center, halfSize, static_cast<std::uint64_t>(subject) });
         };
-        box({ 1.5f, 0.42f, 2.18f }, { 0.35f, 0.42f, 0.41f }, wood, true);
-        box({ 1.5f, 0.84f, 2.18f }, { 0.39f, 0.045f, 0.46f }, wood);
-        // The evidence query uses the same volume as the previous monitor.
         apartment.obstacles.push_back(
             { { 1.5f, 1.10f, 2.20f },
               { 0.24f, 0.21f, 0.13f },
               static_cast<std::uint64_t>(Subject::kCamera) });
 
-        // The two records sit at opposite ends of the route and use distinct
-        // silhouettes.
-        record(Subject::kDoorLog,
-               { -1.85f, 1.40f, 0.12f },
-               { 0.10f, 0.23f, 0.27f },
-               steel);
-        box({ -1.735f, 1.46f, 0.12f },
-            { 0.015f, 0.12f, 0.21f },
-            { 0.30f, 0.57f, 0.51f });
+        apartment.obstacles.push_back(
+            { { -1.85f, 1.40f, 0.12f },
+              { 0.10f, 0.23f, 0.27f },
+              static_cast<std::uint64_t>(Subject::kDoorLog) });
         record(Subject::kBreaker,
                { -1.85f, 3.58f, -7.32f },
                { 0.12f, 0.32f, 0.27f },
@@ -465,7 +405,6 @@ namespace TwentyThreeSeventeen::Game
         box({ 1.707f, 3.69f, -7.03f },
             { 0.017f, 0.19f, 0.15f },
             { 0.75f, 0.69f, 0.52f });
-        AddHandrail(apartment);
         BuildExterior(apartment);
         return apartment;
     }

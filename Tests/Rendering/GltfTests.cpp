@@ -6,8 +6,7 @@
 #include "Rendering/ScannedMesh.hpp"
 #include "rules_cc/cc/runfiles/runfiles.h"
 
-TEST_CASE(
-    "Blender GLB maps append without corrupting the existing material atlas")
+TEST_CASE("Multiple Blender GLBs preserve the existing world material layers")
 {
     using namespace TwentyThreeSeventeen::Rendering;
     using rules_cc::cc::runfiles::Runfiles;
@@ -52,14 +51,35 @@ TEST_CASE(
     CHECK(world.materials.rgba[surfaceLayer * bytes + 2] == 48);
     CHECK(world.materials.rgba[surfaceLayer * bytes + 3] == 0);
 
+    const auto joinery
+        = files->Rlocation("_main/Assets/Geometry/apartment-joinery.glb");
+    const auto oldVertexCount = world.vertices.size();
+    const auto oldIndexCount = world.indices.size();
+    REQUIRE(AppendTexturedModel(world, joinery, {}).has_value());
+    CHECK(world.vertices.size() > oldVertexCount);
+    REQUIRE(world.indices.size() > oldIndexCount);
+    const auto firstNewTriangle
+        = world.indices.begin() + static_cast<std::ptrdiff_t>(oldIndexCount);
+    CHECK(std::ranges::all_of(firstNewTriangle,
+                              world.indices.end(),
+                              [oldVertexCount](std::uint32_t index) {
+                                  return index >= oldVertexCount;
+                              }));
+    REQUIRE(world.materials.materialCount == 11);
+    CHECK(world.materials.rgba.size() == bytes * 22);
+    CHECK(world.materials.rgba[0] == 19);
+    CHECK(world.materials.rgba[11 * bytes] == 37);
+    CHECK(world.materials.rgba[(colorLayer + 11) * bytes + 2] == 48);
+    CHECK(world.materials.rgba[(colorLayer + 11) * bytes + 3] == 0);
+
     // Once reflection probes exist, inserting more materials would move their
     // layers.
-    world.materials.rgba.resize(bytes * 13);
+    world.materials.rgba.resize(bytes * 23);
     const auto vertexCount = world.vertices.size();
     const auto indexCount = world.indices.size();
     CHECK_FALSE(AppendTexturedModel(world, path, { 0, 0, 0 }).has_value());
     CHECK(world.vertices.size() == vertexCount);
     CHECK(world.indices.size() == indexCount);
-    CHECK(world.materials.materialCount == 6);
-    CHECK(world.materials.rgba.size() == bytes * 13);
+    CHECK(world.materials.materialCount == 11);
+    CHECK(world.materials.rgba.size() == bytes * 23);
 }

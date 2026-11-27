@@ -5,6 +5,7 @@
 #include <memory>
 #include <span>
 #include <string>
+#include <string_view>
 
 #include "Game/CaseProps.hpp"
 #include "Rendering/ScannedMesh.hpp"
@@ -138,22 +139,36 @@ namespace TwentyThreeSeventeen::Game
         if (id != Investigation::CaseId::kApartment)
             return {};
         const std::unique_ptr<Runfiles> files(Runfiles::Create(executable));
-        std::string path;
-        if (files)
-            path = files->Rlocation(
-                "_main/Assets/Geometry/security-monitor.glb");
-        if (path.empty() || !SDL_GetPathInfo(path.c_str(), nullptr))
-        {
-            const auto *base = SDL_GetBasePath();
-            if (base == nullptr)
-                return tl::unexpected(std::string(SDL_GetError()));
-            path = std::string(base) + "geometry/security-monitor.glb";
-        }
-        return Rendering::AppendTexturedModel(mesh,
-                                              path,
-                                              { 1.5f, 0.885f, 2.18f },
-                                              1.0f,
-                                              -0.32f);
+        const auto load
+            = [&](std::string_view name,
+                  Rendering::Float3 origin,
+                  float heading) -> tl::expected<void, std::string> {
+            std::string path;
+            if (files)
+                path = files->Rlocation(std::string("_main/Assets/Geometry/")
+                                        + std::string(name));
+            if (path.empty() || !SDL_GetPathInfo(path.c_str(), nullptr))
+            {
+                const auto *base = SDL_GetBasePath();
+                if (base == nullptr)
+                    return tl::unexpected(std::string(SDL_GetError()));
+                path = std::string(base) + "geometry/" + std::string(name);
+            }
+            auto loaded = Rendering::AppendTexturedModel(mesh,
+                                                         path,
+                                                         origin,
+                                                         1.0f,
+                                                         heading);
+            if (!loaded)
+                return tl::unexpected(std::string(name) + ": "
+                                      + loaded.error());
+            return {};
+        };
+        if (auto loaded
+            = load("security-monitor.glb", { 1.5f, 0.885f, 2.18f }, -0.32f);
+            !loaded)
+            return loaded;
+        return load("apartment-joinery.glb", {}, 0.0f);
     }
 
     auto

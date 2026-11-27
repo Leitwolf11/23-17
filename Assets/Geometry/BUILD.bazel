@@ -1,5 +1,11 @@
 filegroup(
     name = "case_props",
-    srcs = ["desk-telephone.glb", "projector.glb", "security-monitor.glb", "stair-recorder.glb"],
+    srcs = [
+        "apartment-joinery.glb",
+        "desk-telephone.glb",
+        "projector.glb",
+        "security-monitor.glb",
+        "stair-recorder.glb",
+    ],
     visibility = ["//Sources/Game:__pkg__", "//Tests/Rendering:__pkg__"],
 )
