@@ -1,17 +1,20 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
+load("@rules_cc//cc:objc_library.bzl", "objc_library")
 load("//Build:Cpp.bzl", "COPTS", "DESKTOP")
 
 cc_library(
     name = "rendering",
     srcs = [
-        "OpenGlRenderer.cpp",
         "Renderer.cpp",
         "ScannedMesh.cpp",
         "SceneOpenGl.inc",
         "SceneSpirv.inc",
-        "VulkanRenderer.cpp",
+        "GpuRenderer.cpp",
         "World.cpp",
-    ],
+    ] + select({
+        "@platforms//os:macos": [":metal_library"],
+        "//conditions:default": ["OpenGlRenderer.cpp"],
+    }),
     copts = COPTS,
     target_compatible_with = DESKTOP,
     visibility = ["//Sources/Game:__pkg__", "//Tests/Rendering:__pkg__"],
@@ -21,7 +24,10 @@ cc_library(
         "//Headers/Rendering:rendering",
         "@rules_cc//cc/runfiles",
         "@sdl3//:sdl3",
-    ],
+    ] + select({
+        "@platforms//os:macos": [":metal_bridge"],
+        "//conditions:default": [],
+    }),
 )
 
 cc_library(
@@ -56,4 +62,23 @@ cc_binary(
         "@rules_cc//cc/runfiles",
         "@sdl3//:sdl3",
     ],
+)
+
+objc_library(
+    name = "metal_bridge",
+    srcs = ["MetalBridge.mm"],
+    copts = COPTS,
+    sdk_frameworks = ["Foundation", "Metal"],
+    target_compatible_with = ["@platforms//os:macos"],
+    deps = ["//Headers/Rendering:rendering"],
+)
+
+genrule(
+    name = "metal_library",
+    srcs = glob(["Metal/*.metal"]),
+    outs = ["SceneMetallib.inc"],
+    tools = ["//Build:CompileMetalLibrary.py"],
+    cmd = "python3 $(location //Build:CompileMetalLibrary.py) $@ $(SRCS)",
+    target_compatible_with = ["@platforms//os:macos"],
+    exec_compatible_with = ["@platforms//os:macos"],
 )

@@ -6,7 +6,7 @@
 
 The native build opens three playable investigations. **The Apartment** follows a death on a rainy stairwell. **Night Shift** traces missing records through an archive. **The Last Screening** reconstructs a projectionist’s movements after closing. Each case has an independent save, original glTF props and a distinct environmental scare. The [narrative design](Docs/NarrativeDesign.md) documents the stories, art and playtime targets, and PEGI 16 content target.
 
-The C++20 engine targets Windows and Linux desktop. It ships US English, German and French in the native menus and case files. The [Godot Legacy Demo](LegacyDemo/README.md) is the earlier version of the Apartment investigation.
+The C++20 engine targets Windows, Linux and macOS desktop. It ships US English, German and French in the native menus and case files. The [Godot Legacy Demo](LegacyDemo/README.md) is the earlier version of the Apartment investigation.
 
 ## Graphics engine reference
 
@@ -16,7 +16,9 @@ Launch the material study independently of the game. Drag with the left mouse bu
 bazelisk run //Sources/Rendering:reference -- --fullscreen
 ```
 
-The desktop renderer uploads indexed meshes once per scene. OpenGL 4.2 Core and Vulkan use the same GLSL sources for normal-mapped metallic/roughness shading, local reflections, depth-dependent haze, filmic tone mapping and a contrast-adaptive edge filter. Static triangle geometry supplies area-light visibility and hemispherical contact occlusion. Interior and street probes capture the scene at load time. Light intensity and camera-dependent highlights update every frame. The street's rain film lowers asphalt roughness.
+The desktop renderer uploads indexed meshes once per scene. OpenGL 4.2 Core, Vulkan and Metal 3 use the same GLSL sources for normal-mapped metallic/roughness shading, local reflections, depth-dependent haze, filmic tone mapping and a contrast-adaptive edge filter. Static triangle geometry supplies area-light visibility and hemispherical contact occlusion. Interior and street probes capture the scene at load time. Light intensity and camera-dependent highlights update every frame. The street's rain film lowers asphalt roughness.
+
+On macOS 13 or later, the Objective-C++ bridge checks the default GPU for the Metal 3 family. Xcode's Metal compiler builds the shared shader stages into a native Metal 3 library. Open the study with `bazelisk run //Sources/Rendering:reference -- --graphics=metal`. Regenerating shader sources requires `glslc` and `spirv-cross`. Normal builds use the checked-in shader sources.
 
 The reference scene includes a vaulted alcove, turned plinths, a marble bust and a brass vase. The production executable and material study share the rendering library. Jolt handles player movement and collision in the game. Asset provenance is recorded with the [materials](Assets/Materials/README.md) and [reference models](Assets/Reference/README.md).
 
@@ -30,7 +32,7 @@ bazelisk test //Tests/...
 bazelisk run //Benches/Investigation:case_benchmark
 ```
 
-Use **WASD** or the arrow keys to move, the **mouse** to look and **E** to interact. **J** opens the journal, where you can reread collected sources, choose records to compare, challenge testimony and order events. **R** opens the report. Case evidence, timeline edits and report drafts save automatically when you close a panel. The earlier native Apartment save is copied into the new case file when first opened. The pause menu lets you return to the case selector. In-game panels support mouse selection, arrow keys, Enter, numbered shortcuts and Esc. **Esc** opens the pause menu and **F1** goes directly to Settings. **Automatic** tries a hardware Vulkan device first and falls back to OpenGL 4.2 Core. You can select a specific API from the settings and the choice is saved separately from the legacy demo. Use `-- --graphics=opengl` or `-- --graphics=vulkan` after the Bazel target to override the startup preference for one run.
+Use **WASD** or the arrow keys to move, the **mouse** to look and **E** to interact. **J** opens the journal, where you can reread collected sources, choose records to compare, challenge testimony and order events. **R** opens the report. Case evidence, timeline edits and report drafts save automatically when you close a panel. The earlier native Apartment save is copied into the new case file when first opened. The pause menu lets you return to the case selector. In-game panels support mouse selection, arrow keys, Enter, numbered shortcuts and Esc. **Esc** opens the pause menu and **F1** goes directly to Settings. **Automatic** tries a hardware Vulkan device first and falls back to Metal 3 on macOS or OpenGL 4.2 Core on Windows and Linux. You can select a specific API from the settings and the choice is saved separately from the legacy demo. Use `-- --graphics=opengl` or `-- --graphics=vulkan` after the Bazel target to override the startup preference for one run.
 
 From the start or pause menu, open **Settings** to change render resolution, borderless fullscreen, VSync, graphics quality, mouse sensitivity, vertical look, language, ambience volume, sudden-effect volume and sound captions. **Apply changes** saves the selected options. Borderless fullscreen uses the desktop size for presentation. The game renders at the selected resolution and fits the image to the available space.
 

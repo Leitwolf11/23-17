@@ -136,7 +136,7 @@ namespace TwentyThreeSeventeen::Game
                                          "Français" };
         constexpr std::array kBackends{ Rendering::Backend::kAuto,
                                         Rendering::Backend::kVulkan,
-                                        Rendering::Backend::kOpenGl };
+                                        Rendering::kNativeAlternative };
 
         auto
         For(Language language) noexcept -> const Text &
@@ -258,7 +258,11 @@ namespace TwentyThreeSeventeen::Game
                  const Text &text,
                  Rendering::Backend active) -> void
         {
-            const std::array apis{ text.automatic, "Vulkan", "OpenGL 4.2" };
+            const std::array apis{
+                text.automatic,
+                "Vulkan",
+                Rendering::Name(Rendering::kNativeAlternative).data()
+            };
             constexpr std::array levels{ "Low",
                                          "Medium",
                                          "High",
@@ -266,8 +270,10 @@ namespace TwentyThreeSeventeen::Game
                                          "Max" };
             while (!dialog.WantsQuit())
             {
-                const auto apiIndex
-                    = static_cast<std::size_t>(settings.backend);
+                const std::size_t apiIndex
+                    = settings.backend == kBackends[2]
+                          ? 2u
+                          : (settings.backend == kBackends[1] ? 1u : 0u);
                 const auto presetIndex
                     = static_cast<std::size_t>(settings.preset);
                 const auto quality = Quality(settings);
@@ -293,7 +299,7 @@ namespace TwentyThreeSeventeen::Game
                                  "API",
                                  text.back,
                                  apis,
-                                 static_cast<int>(settings.backend)))];
+                                 static_cast<int>(apiIndex)))];
                         break;
                     case 1:
                     {

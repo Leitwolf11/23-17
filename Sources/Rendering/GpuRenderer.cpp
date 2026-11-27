@@ -10,14 +10,25 @@ namespace TwentyThreeSeventeen::Rendering
     namespace
     {
 #include "SceneSpirv.inc"
+#if defined(__APPLE__)
+#    include "SceneMetallib.inc"
+#endif
+        struct Stage
+        {
+            std::span<const Uint8> spirv;
+            const char *metalEntry;
+        };
 
         constexpr Uint32 kVertexBufferSize = 6 * 1024 * 1024;
         constexpr auto kDepthFormat = SDL_GPU_TEXTUREFORMAT_D16_UNORM;
 
-        class VulkanRenderer final: public Renderer
+        class GpuRenderer final: public Renderer
         {
         public:
-            ~VulkanRenderer() override
+            explicit GpuRenderer(Backend backend)
+                : backend_(backend)
+            {}
+            ~GpuRenderer() override
             {
                 if (device_ != nullptr)
                 {
@@ -56,10 +67,12 @@ namespace TwentyThreeSeventeen::Rendering
                 const auto properties = SDL_CreateProperties();
                 SDL_SetStringProperty(properties,
                                       SDL_PROP_GPU_DEVICE_CREATE_NAME_STRING,
-                                      "vulkan");
+                                      Key(backend_).data());
                 SDL_SetBooleanProperty(
                     properties,
-                    SDL_PROP_GPU_DEVICE_CREATE_SHADERS_SPIRV_BOOLEAN,
+                    backend_ == Backend::kMetal
+                        ? SDL_PROP_GPU_DEVICE_CREATE_SHADERS_METALLIB_BOOLEAN
+                        : SDL_PROP_GPU_DEVICE_CREATE_SHADERS_SPIRV_BOOLEAN,
                     true);
                 SDL_SetBooleanProperty(
                     properties,
@@ -104,8 +117,9 @@ namespace TwentyThreeSeventeen::Rendering
                             device_,
                             window_,
                             SDL_GPU_PRESENTMODE_IMMEDIATE))
-                        return tl::unexpected(std::string(
-                            "Vulkan cannot disable VSync on this display."));
+                        return tl::unexpected(
+                            std::string("The GPU driver cannot disable VSync "
+                                        "on this display."));
                     if (!SDL_SetGPUSwapchainParameters(
                             device_,
                             window_,
@@ -148,24 +162,25 @@ namespace TwentyThreeSeventeen::Rendering
                                 : SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
                             attribute.offset };
                 }
-                pipeline_ = Pipeline(kVertSpirv,
-                                     kFragSpirv,
+                pipeline_ = Pipeline({ kVertSpirv, "SceneVert" },
+                                     { kFragSpirv, "SceneFrag" },
                                      overlayAttributes,
                                      sizeof(Vertex),
                                      0,
                                      0);
-                worldPipeline_ = Pipeline(kWorldVertSpirv,
-                                          kWorldFragSpirv,
+                worldPipeline_ = Pipeline({ kWorldVertSpirv, "WorldVert" },
+                                          { kWorldFragSpirv, "WorldFrag" },
                                           worldAttributes,
                                           sizeof(WorldVertex),
                                           1,
                                           1);
-                presentPipeline_ = Pipeline(kPresentVertSpirv,
-                                            kPresentFragSpirv,
-                                            {},
-                                            0,
-                                            0,
-                                            1);
+                presentPipeline_
+                    = Pipeline({ kPresentVertSpirv, "PresentVert" },
+                               { kPresentFragSpirv, "PresentFrag" },
+                               {},
+                               0,
+                               0,
+                               1);
                 SDL_GPUSamplerCreateInfo sampler{};
                 sampler.min_filter = SDL_GPU_FILTER_LINEAR;
                 sampler.mag_filter = SDL_GPU_FILTER_LINEAR;
@@ -180,14 +195,16 @@ namespace TwentyThreeSeventeen::Rendering
                 if (!pipeline_ || !worldPipeline_ || !presentPipeline_
                     || !sampler_ || !edgeSampler_)
                     return tl::unexpected(std::string(SDL_GetError()));
-                SDL_Log("Vulkan renderer: %s", SDL_GetGPUDeviceDriver(device_));
+                SDL_Log("%s renderer: %s",
+                        Name(backend_).data(),
+                        SDL_GetGPUDeviceDriver(device_));
                 return {};
             }
 
             auto
             ActiveBackend() const noexcept -> Backend override
             {
-                return Backend::kVulkan;
+                return backend_;
             }
 
             auto
@@ -208,14 +225,13 @@ namespace TwentyThreeSeventeen::Rendering
                 if (world && cached_ != world->mesh)
                 {
                     if (!UploadWorld(*world->mesh))
-                        return tl::unexpected(
-                            std::string("Vulkan world upload: ")
-                            + SDL_GetError());
+                        return tl::unexpected(std::string("GPU world upload: ")
+                                              + SDL_GetError());
                     cached_ = world->mesh;
                 }
                 if (frame.size_bytes() > kVertexBufferSize)
                     return tl::unexpected(
-                        std::string("The Vulkan vertex buffer is full."));
+                        std::string("The GPU vertex buffer is full."));
 
                 auto *mapped = SDL_MapGPUTransferBuffer(device_, upload_, true);
                 if (mapped == nullptr)
@@ -362,29 +378,40 @@ namespace TwentyThreeSeventeen::Rendering
 
         private:
             auto
-            Pipeline(std::span<const Uint8> vert,
-                     std::span<const Uint8> frag,
+            Pipeline(Stage vert,
+                     Stage frag,
                      std::span<const SDL_GPUVertexAttribute> attributes,
                      Uint32 stride,
                      Uint32 uniforms,
                      Uint32 samplers) -> SDL_GPUGraphicsPipeline *
             {
-                SDL_GPUShaderCreateInfo shader{};
-                shader.code_size = vert.size();
-                shader.code = vert.data();
-                shader.entrypoint = "main";
-                shader.format = SDL_GPU_SHADERFORMAT_SPIRV;
-                shader.stage = SDL_GPU_SHADERSTAGE_VERTEX;
-                shader.num_uniform_buffers = uniforms;
-                auto *vertex = SDL_CreateGPUShader(device_, &shader);
+                const auto compile = [&](const Stage &stage,
+                                         SDL_GPUShaderStage kind,
+                                         Uint32 textures) {
+                    SDL_GPUShaderCreateInfo shader{};
+                    shader.code_size = stage.spirv.size();
+                    shader.code = stage.spirv.data();
+                    shader.entrypoint = "main";
+                    shader.format = SDL_GPU_SHADERFORMAT_SPIRV;
+#if defined(__APPLE__)
+                    if (backend_ == Backend::kMetal)
+                    {
+                        shader.code = kMetalLibrary;
+                        shader.code_size = sizeof(kMetalLibrary);
+                        shader.entrypoint = stage.metalEntry;
+                        shader.format = SDL_GPU_SHADERFORMAT_METALLIB;
+                    }
+#endif
+                    shader.stage = kind;
+                    shader.num_uniform_buffers = uniforms;
+                    shader.num_samplers = textures;
+                    return SDL_CreateGPUShader(device_, &shader);
+                };
+                auto *vertex = compile(vert, SDL_GPU_SHADERSTAGE_VERTEX, 0);
                 if (!vertex)
                     return nullptr;
-                shader.code_size = frag.size();
-                shader.code = frag.data();
-                shader.stage = SDL_GPU_SHADERSTAGE_FRAGMENT;
-                shader.num_uniform_buffers = uniforms;
-                shader.num_samplers = samplers;
-                auto *fragment = SDL_CreateGPUShader(device_, &shader);
+                auto *fragment
+                    = compile(frag, SDL_GPU_SHADERSTAGE_FRAGMENT, samplers);
                 if (!fragment)
                 {
                     SDL_ReleaseGPUShader(device_, vertex);
@@ -592,6 +619,7 @@ namespace TwentyThreeSeventeen::Rendering
                 return {};
             }
 
+            Backend backend_;
             SDL_GPUGraphicsPipeline *worldPipeline_{}, *presentPipeline_{};
             SDL_GPUBuffer *worldVbo_{}, *worldIbo_{};
             SDL_GPUTexture *atlas_{};
@@ -613,10 +641,10 @@ namespace TwentyThreeSeventeen::Rendering
     } // namespace
 
     auto
-    Vulkan(WindowSize size, bool sync, bool requireHardware)
+    Gpu(Backend backend, WindowSize size, bool sync, bool requireHardware)
         -> tl::expected<std::unique_ptr<Renderer>, std::string>
     {
-        auto renderer = std::make_unique<VulkanRenderer>();
+        auto renderer = std::make_unique<GpuRenderer>(backend);
         if (const auto initialized
             = renderer->Initialize(size, sync, requireHardware);
             !initialized)

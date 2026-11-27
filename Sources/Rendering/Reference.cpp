@@ -6,6 +6,7 @@
 #include <numbers>
 #include <span>
 
+#include "Rendering/MetalBridge.hpp"
 #include "Rendering/Renderer.hpp"
 #include "Rendering/ScannedMesh.hpp"
 #include "rules_cc/cc/runfiles/runfiles.h"
@@ -367,6 +368,8 @@ int
 main(int argc, char **argv)
 {
     using namespace TwentyThreeSeventeen::Rendering;
+    if (argc == 2 && std::string_view(argv[1]) == "--probe-metal")
+        return HasMetal3Device() ? 0 : 77;
     Backend backend = Backend::kAuto;
     int frames = 0;
     bool software = false, fullscreen = false;

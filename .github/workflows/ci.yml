@@ -35,6 +35,36 @@ jobs:
       - name: Verify the three investigation routes
         run: bazel-bin/Sources/Game/23.17 --verify-campaign
 
+  metal:
+    name: macOS Metal 3
+    runs-on: macos-15
+    env:
+      MACOSX_DEPLOYMENT_TARGET: "13.0"
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: bazel-contrib/setup-bazel@104e3eea9447cdaa4b00d0fb46191a3985d26ab3 # 0.19.1
+        with:
+          bazelisk-cache: true
+          repository-cache: true
+          disk-cache: native-metal
+          cache-save: ${{ github.event_name != 'pull_request' }}
+      - name: Compile the Objective-C++ bridge, Metal 3 shaders and desktop targets
+        run: bazelisk test //Tests/... //Sources/Rendering:reference //Sources/Game:23.17
+      - name: Verify Jolt and exercise the available Metal device
+        run: |
+          bazel-bin/Sources/Game/23.17 --verify-campaign
+          status=0
+          bazel-bin/Sources/Rendering/reference --probe-metal || status=$?
+          if [ "$status" -eq 77 ]; then
+            echo "::notice::The runner exposes no Metal 3 device. The metallib and native bridge compiled."
+          elif [ "$status" -ne 0 ]; then
+            exit "$status"
+          else
+            bazel-bin/Sources/Rendering/reference --graphics=metal --frames=12
+          fi
+
   documentation:
     name: Doxygen
     runs-on: ubuntu-24.04

@@ -59,6 +59,7 @@ COPTS = select({
 })
 DESKTOP = select({
     "@platforms//os:linux": [],
+    "@platforms//os:macos": [],
     "@platforms//os:windows": [],
     "//conditions:default": ["@platforms//:incompatible"],
 })

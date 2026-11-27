@@ -198,8 +198,8 @@ namespace TwentyThreeSeventeen::Game
                     const auto key = value.substr(11);
                     options.override = Rendering::ParseBackend(key);
                     if (key != Rendering::Key(options.override))
-                        return tl::unexpected(
-                            std::string("Expected auto, vulkan or opengl."));
+                        return tl::unexpected(std::string(
+                            "Expected auto, vulkan, metal or opengl."));
                     options.hasOverride = true;
                 }
                 else if (value.starts_with("--frames="))
@@ -1069,9 +1069,10 @@ namespace TwentyThreeSeventeen::Game
                     }
                     SDL_Log("Vulkan frame failed: %s",
                             rendered.error().c_str());
-                    auto fallback = Rendering::Open(Backend::kOpenGl,
-                                                    DesiredSize(settings),
-                                                    settings.sync);
+                    auto fallback
+                        = Rendering::Open(Rendering::kNativeAlternative,
+                                          DesiredSize(settings),
+                                          settings.sync);
                     if (!fallback)
                     {
                         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
@@ -1193,7 +1194,7 @@ namespace TwentyThreeSeventeen::Game
             {
                 const auto original = graphics.renderer->ActiveBackend();
                 const auto other = original == Backend::kVulkan
-                                       ? Backend::kOpenGl
+                                       ? Rendering::kNativeAlternative
                                        : Backend::kVulkan;
                 auto alternative = settings;
                 alternative.backend = other;

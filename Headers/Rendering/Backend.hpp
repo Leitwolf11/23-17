@@ -11,7 +11,14 @@ namespace TwentyThreeSeventeen::Rendering
         kAuto,
         kVulkan,
         kOpenGl,
+        kMetal,
     };
+
+#if defined(__APPLE__)
+    inline constexpr auto kNativeAlternative = Backend::kMetal;
+#else
+    inline constexpr auto kNativeAlternative = Backend::kOpenGl;
+#endif
 
     constexpr auto
     Name(Backend backend) -> std::string_view
@@ -22,6 +29,8 @@ namespace TwentyThreeSeventeen::Rendering
                 return "Vulkan";
             case Backend::kOpenGl:
                 return "OpenGL 4.2";
+            case Backend::kMetal:
+                return "Metal 3";
             case Backend::kAuto:
                 return "Automatic";
         }
@@ -37,6 +46,8 @@ namespace TwentyThreeSeventeen::Rendering
                 return "vulkan";
             case Backend::kOpenGl:
                 return "opengl";
+            case Backend::kMetal:
+                return "metal";
             case Backend::kAuto:
                 return "auto";
         }
@@ -46,6 +57,8 @@ namespace TwentyThreeSeventeen::Rendering
     constexpr auto
     ParseBackend(std::string_view text) -> Backend
     {
+        if (text == Key(Backend::kMetal))
+            return Backend::kMetal;
         if (text == Key(Backend::kVulkan))
             return Backend::kVulkan;
         if (text == Key(Backend::kOpenGl))
@@ -56,8 +69,8 @@ namespace TwentyThreeSeventeen::Rendering
     constexpr auto
     StartupOrder(Backend preferred) -> std::array<Backend, 2>
     {
-        if (preferred == Backend::kOpenGl)
-            return { Backend::kOpenGl, Backend::kVulkan };
-        return { Backend::kVulkan, Backend::kOpenGl };
+        if (preferred == kNativeAlternative)
+            return { kNativeAlternative, Backend::kVulkan };
+        return { Backend::kVulkan, kNativeAlternative };
     }
 } // namespace TwentyThreeSeventeen::Rendering

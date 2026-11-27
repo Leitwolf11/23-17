@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+#include "Rendering/MetalBridge.hpp"
 #include "Rendering/Renderer.hpp"
 
 namespace TwentyThreeSeventeen::Rendering
@@ -7,7 +8,7 @@ namespace TwentyThreeSeventeen::Rendering
     OpenGl(WindowSize size, bool sync)
         -> tl::expected<std::unique_ptr<Renderer>, std::string>;
     auto
-    Vulkan(WindowSize size, bool sync, bool requireHardware)
+    Gpu(Backend backend, WindowSize size, bool sync, bool requireHardware)
         -> tl::expected<std::unique_ptr<Renderer>, std::string>;
 
     auto
@@ -17,9 +18,19 @@ namespace TwentyThreeSeventeen::Rendering
         switch (backend)
         {
             case Backend::kVulkan:
-                return Vulkan(size, sync, requireHardware);
+                return Gpu(backend, size, sync, requireHardware);
+            case Backend::kMetal:
+                if (!HasMetal3Device())
+                    return tl::unexpected(std::string(
+                        "A Metal 3 GPU on macOS 13 or later is required."));
+                return Gpu(backend, size, sync, true);
             case Backend::kOpenGl:
+#if defined(__APPLE__)
+                return tl::unexpected(
+                    std::string("OpenGL 4.2 Core is unavailable on macOS."));
+#else
                 return OpenGl(size, sync);
+#endif
             case Backend::kAuto:
                 break;
         }
