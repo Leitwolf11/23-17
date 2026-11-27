@@ -42,6 +42,7 @@ def main() -> None:
                 archive.write(license_file, f"23.17/licenses/{license_file.name}")
             archive.write(root / "Assets/Materials/surfaces.png", "23.17/materials/surfaces.png")
             archive.write(root / "Assets/Materials/README.md", "23.17/materials/README.md")
+            archive.write(root / "Assets/Geometry/README.md", "23.17/geometry/README.md")
             for mesh in meshes:
                 archive.write(mesh, f"23.17/geometry/{mesh.name}")
             for recording in recordings:

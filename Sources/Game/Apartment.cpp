@@ -407,13 +407,11 @@ namespace TwentyThreeSeventeen::Game
         };
         box({ 1.5f, 0.42f, 2.18f }, { 0.35f, 0.42f, 0.41f }, wood, true);
         box({ 1.5f, 0.84f, 2.18f }, { 0.39f, 0.045f, 0.46f }, wood);
-        record(Subject::kCamera,
-               { 1.5f, 1.10f, 2.20f },
-               { 0.24f, 0.21f, 0.13f },
-               steel);
-        box({ 1.5f, 1.12f, 2.34f },
-            { 0.19f, 0.14f, 0.014f },
-            { 0.23f, 0.49f, 0.44f });
+        // The evidence query uses the same volume as the previous monitor.
+        apartment.obstacles.push_back(
+            { { 1.5f, 1.10f, 2.20f },
+              { 0.24f, 0.21f, 0.13f },
+              static_cast<std::uint64_t>(Subject::kCamera) });
 
         // The two records sit at opposite ends of the route and use distinct
         // silhouettes.

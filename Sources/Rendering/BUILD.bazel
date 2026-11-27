@@ -5,6 +5,8 @@ load("//Build:Cpp.bzl", "COPTS", "DESKTOP")
 cc_library(
     name = "rendering",
     srcs = [
+        "GltfMaterials.cpp",
+        "GltfMaterials.hpp",
         "GpuPipelines.cpp",
         "GpuPipelines.hpp",
         "GpuRenderer.cpp",

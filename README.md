@@ -22,6 +22,8 @@ On macOS 13 or later, the Objective-C++ bridge checks the default GPU for the Me
 
 The reference scene includes a vaulted alcove, turned plinths, a marble bust and a brass vase. The production executable and material study share the rendering library. Jolt handles player movement and collision in the game. Asset provenance is recorded with the [materials](Assets/Materials/README.md) and [reference models](Assets/Reference/README.md).
 
+The Apartment security monitor is an original Blender GLB. The renderer loads its embedded PBR maps at scene load and keeps its screen visible on Low. See the [case geometry](Assets/Geometry/README.md) for the supported Blender export settings.
+
 ## Run the native build
 
 Use Bazelisk and Clang from the repository root. GCC and clang-cl are compatibility configurations.

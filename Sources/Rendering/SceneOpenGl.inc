@@ -67,7 +67,7 @@ void main()
     worldTangent=tangent;
     worldPosition=posed;
     lightVisibility=visibility;
-    layer=forward.w>0.0 ? int(coordinates.z)-1 : -1;
+    layer=(forward.w>0.0 || response.y>0.0) ? int(coordinates.z)-1 : -1;
     uv=coordinates.xy;
     surfaceTint=tint;
     ambientEmission=response.xy * mix(1.0, eye.w, response.z);

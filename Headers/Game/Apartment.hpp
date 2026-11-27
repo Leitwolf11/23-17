@@ -70,7 +70,7 @@ namespace TwentyThreeSeventeen::Game
     [[nodiscard]] auto
     CreateScene(Investigation::CaseId id) -> Apartment;
     [[nodiscard]] auto
-    BuildWorld(const Apartment &scene, Rendering::MaterialAtlas materials)
+    BuildWorld(const Apartment &scene, Rendering::WorldMesh initial)
         -> std::shared_ptr<Rendering::WorldMesh>;
     [[nodiscard]] auto
     FrameView(const Apartment &scene,

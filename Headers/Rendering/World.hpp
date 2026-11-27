@@ -58,6 +58,7 @@ namespace TwentyThreeSeventeen::Rendering
     struct MaterialAtlas
     {
         static constexpr int kTileSize = 512;
+        static constexpr int kMaximumMaterials = 32;
         int materialCount{ 5 };
         int probeCount{ 1 };
         [[nodiscard]] auto

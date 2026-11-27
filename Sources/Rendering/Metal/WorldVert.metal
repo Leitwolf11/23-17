@@ -21,15 +21,15 @@ struct _27
 
 struct WorldVert_out
 {
-    float2 m_130 [[user(locn0)]];
+    float2 m_137 [[user(locn0)]];
     int m_109 [[user(locn1)]];
-    float3 m_133 [[user(locn2)]];
+    float3 m_140 [[user(locn2)]];
     float4 m_105 [[user(locn3)]];
     float3 m_103 [[user(locn4)]];
     float3 m_97 [[user(locn5)]];
     float4 m_100 [[user(locn6)]];
-    float2 m_136 [[user(locn7)]];
-    float m_147 [[user(locn8)]];
+    float2 m_143 [[user(locn7)]];
+    float m_154 [[user(locn8)]];
     float4 gl_Position [[position]];
 };
 
@@ -38,8 +38,8 @@ struct WorldVert_in
     float3 m_11 [[attribute(0)]];
     float3 m_98 [[attribute(1)]];
     float4 m_101 [[attribute(2)]];
-    float3 m_134 [[attribute(3)]];
-    float3 m_119 [[attribute(4)]];
+    float3 m_141 [[attribute(3)]];
+    float3 m_126 [[attribute(4)]];
     float4 m_106 [[attribute(5)]];
     float4 m_15 [[attribute(6)]];
 };
@@ -56,19 +56,29 @@ vertex WorldVert_out WorldVert(WorldVert_in in [[stage_in]], constant _27& _29 [
     out.m_100 = in.m_101;
     out.m_103 = _12;
     out.m_105 = in.m_106;
-    int _166;
-    if (_29._m3.w > 0.0)
+    bool _114 = _29._m3.w > 0.0;
+    bool _121;
+    if (!_114)
     {
-        _166 = int(in.m_119.z) - 1;
+        _121 = in.m_15.y > 0.0;
     }
     else
     {
-        _166 = -1;
+        _121 = _114;
     }
-    out.m_109 = _166;
-    out.m_130 = in.m_119.xy;
-    out.m_133 = in.m_134;
-    out.m_136 = in.m_15.xy * mix(1.0, _29._m0.w, in.m_15.z);
-    out.m_147 = 1.0 - exp(((-0.02199999988079071044921875) * fast::max(_61 - 2.0, 0.0)) * exp((-0.119999997317790985107421875) * fast::max(in.m_11.y, 0.0)));
+    int _173;
+    if (_121)
+    {
+        _173 = int(in.m_126.z) - 1;
+    }
+    else
+    {
+        _173 = -1;
+    }
+    out.m_109 = _173;
+    out.m_137 = in.m_126.xy;
+    out.m_140 = in.m_141;
+    out.m_143 = in.m_15.xy * mix(1.0, _29._m0.w, in.m_15.z);
+    out.m_154 = 1.0 - exp(((-0.02199999988079071044921875) * fast::max(_61 - 2.0, 0.0)) * exp((-0.119999997317790985107421875) * fast::max(in.m_11.y, 0.0)));
     return out;
 }

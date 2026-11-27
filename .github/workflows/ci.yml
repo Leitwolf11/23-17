@@ -32,6 +32,11 @@ jobs:
           export SDL_VIDEO_DRIVER=x11 SDL_VIDEO_FORCE_EGL=1 LIBGL_ALWAYS_SOFTWARE=1
           xvfb-run -a bazel-bin/Sources/Rendering/reference --graphics=opengl --frames=3
           xvfb-run -a bazel-bin/Sources/Rendering/reference --graphics=vulkan --allow-software --frames=3
+      - name: Verify the textured Apartment prop in the game
+        run: |
+          export SDL_VIDEO_DRIVER=x11 SDL_VIDEO_FORCE_EGL=1 LIBGL_ALWAYS_SOFTWARE=1
+          export SDL_AUDIO_DRIVER=dummy XDG_DATA_HOME="$(mktemp -d)"
+          xvfb-run -a bazel-bin/Sources/Game/23.17 --case=apartment --graphics=opengl --frames=12
       - name: Verify the three investigation routes
         run: bazel-bin/Sources/Game/23.17 --verify-campaign
 

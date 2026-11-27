@@ -12,7 +12,8 @@ namespace TwentyThreeSeventeen::Rendering
     {
         constexpr std::size_t tileBytes
             = MaterialAtlas::kTileSize * MaterialAtlas::kTileSize * 4;
-        return materials.materialCount >= 1 && materials.materialCount <= 32
+        return materials.materialCount >= 1
+               && materials.materialCount <= MaterialAtlas::kMaximumMaterials
                && materials.probeCount >= 1 && materials.probeCount <= 2
                && materials.rgba.size()
                       == static_cast<std::size_t>(materials.LayerCount())

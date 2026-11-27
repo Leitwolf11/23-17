@@ -7,6 +7,7 @@
 #include <string>
 
 #include "Game/CaseProps.hpp"
+#include "Rendering/ScannedMesh.hpp"
 #include "rules_cc/cc/runfiles/runfiles.h"
 
 namespace TwentyThreeSeventeen::Game
@@ -127,6 +128,33 @@ namespace TwentyThreeSeventeen::Game
             return fixtures.size() > before;
         }
     } // namespace
+
+    auto
+    AddTexturedCaseProps(Rendering::WorldMesh &mesh,
+                         Investigation::CaseId id,
+                         const char *executable)
+        -> tl::expected<void, std::string>
+    {
+        if (id != Investigation::CaseId::kApartment)
+            return {};
+        const std::unique_ptr<Runfiles> files(Runfiles::Create(executable));
+        std::string path;
+        if (files)
+            path = files->Rlocation(
+                "_main/Assets/Geometry/security-monitor.glb");
+        if (path.empty() || !SDL_GetPathInfo(path.c_str(), nullptr))
+        {
+            const auto *base = SDL_GetBasePath();
+            if (base == nullptr)
+                return tl::unexpected(std::string(SDL_GetError()));
+            path = std::string(base) + "geometry/security-monitor.glb";
+        }
+        return Rendering::AppendTexturedModel(mesh,
+                                              path,
+                                              { 1.5f, 0.885f, 2.18f },
+                                              1.0f,
+                                              -0.32f);
+    }
 
     auto
     AddCaseProps(Apartment &scene,

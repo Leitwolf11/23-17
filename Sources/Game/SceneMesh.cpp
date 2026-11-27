@@ -96,12 +96,11 @@ namespace TwentyThreeSeventeen::Game
 
     } // namespace
     auto
-    BuildWorld(const Apartment &scene, Rendering::MaterialAtlas materials)
+    BuildWorld(const Apartment &scene, Rendering::WorldMesh initial)
         -> std::shared_ptr<Rendering::WorldMesh>
     {
         constexpr std::array order{ 0u, 1u, 2u, 1u, 3u, 2u };
-        auto mesh = std::make_shared<Rendering::WorldMesh>();
-        mesh->materials = std::move(materials);
+        auto mesh = std::make_shared<Rendering::WorldMesh>(std::move(initial));
         AppendTriangles(*mesh, scene.fixtures, nullptr);
         for (const auto &actor : scene.actors)
             AppendTriangles(*mesh, actor.triangles, &actor);

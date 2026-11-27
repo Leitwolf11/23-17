@@ -240,7 +240,7 @@ namespace TwentyThreeSeventeen::Rendering
                                   Float3 p,
                                   float scale,
                                   float yaw,
-                                  float tile) {
+                                  int tile) {
                 const auto path
                     = files ? files->Rlocation("_main/Assets/Reference/" + name)
                             : std::string{};

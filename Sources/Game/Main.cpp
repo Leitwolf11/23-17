@@ -771,7 +771,18 @@ namespace TwentyThreeSeventeen::Game
                              materials.error().c_str());
                 return EXIT_FAILURE;
             }
-            const auto world = BuildWorld(apartment, std::move(*materials));
+            Rendering::WorldMesh initial;
+            initial.materials = std::move(*materials);
+            if (const auto loaded
+                = AddTexturedCaseProps(initial, id, executable);
+                !loaded)
+            {
+                SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                             "Could not load the case model: %s",
+                             loaded.error().c_str());
+                return EXIT_FAILURE;
+            }
+            const auto world = BuildWorld(apartment, std::move(initial));
             const auto casePath = CaseFile(path, id);
             auto investigation = LoadCase(casePath, id);
             std::error_code existenceError;
