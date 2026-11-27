@@ -10,7 +10,7 @@ namespace TwentyThreeSeventeen::Rendering
     {
 #include "SceneSpirv.inc"
 #if defined(__APPLE__)
-#    include "SceneMetallib.inc"
+#    include "Sources/Rendering/SceneMetallib.inc"
         constexpr std::span<const Uint8> kEmbeddedMetal = kMetalLibrary;
 #else
         constexpr std::span<const Uint8> kEmbeddedMetal{};
